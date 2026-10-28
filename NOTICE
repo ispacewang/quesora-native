@@ -1,0 +1,12 @@
+Quesora Native
+Copyright 2026 ispacewang and contributors.
+
+Native Go/MyGo implementation of Quesora.
+Original Electron project and shared visual assets:
+https://github.com/ispacewang/quesora
+
+Third-party components retain their own licenses. See third_party/xls/LICENSE
+and third_party/xls/QUESORA_CHANGES.md for the patched XLS reader.
+Embedded Noto Sans SC fonts use the SIL Open Font License 1.1; see
+resources/fonts/OFL.txt and resources/fonts/LICENSE.txt.
+Portable release archives include the dependency licenses in licenses/.

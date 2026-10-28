@@ -1,0 +1,38 @@
+# Build output and caches
+/build/
+/.preview-build/
+/.release-checkout/
+/.mygo/
+*.exe
+*.syso
+*.test
+*.out
+*.zip
+__pycache__/
+*.pyc
+# Local question banks and practice records
+/data/
+/qa/runtime/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+# Local workspace and backup files
+/.agents/
+/.codex/
+/.idea/
+/.vscode/
+/starter-backup/
+/tasks/
+/qa/reference*
+/qa/native*
+/qa/convert_fonts.py
+/qa/fixtures.json
+.env
+.env.*
+*.pem
+*.key
+*.log
+Thumbs.db
+.DS_Store

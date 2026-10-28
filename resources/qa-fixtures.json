@@ -1,0 +1,65 @@
+{
+  "single": {
+    "id": 1,
+    "type": "单选题",
+    "question": "已知函数 f(x) = x² − 2x + 1，则 f(x) 的最小值为：",
+    "options": [
+      "−1",
+      "0",
+      "1",
+      "2"
+    ],
+    "answer": "B",
+    "explanation": "将函数配方：f(x) = (x − 1)²。平方恒不小于 0，当 x = 1 时取到最小值 0。",
+    "meta": {},
+    "finished": false
+  },
+  "multi": {
+    "id": 2,
+    "type": "多选题",
+    "question": "下列关于函数 y = x² 的说法，正确的有哪些？",
+    "options": [
+      "图像关于 y 轴对称",
+      "在整个实数范围内单调递增",
+      "最小值为 0",
+      "图像经过点 (2, 4)"
+    ],
+    "answer": "ACD",
+    "explanation": "y = x² 是偶函数；在负半轴递减、正半轴递增，最小值为 0。",
+    "meta": {},
+    "finished": false
+  },
+  "judge": {
+    "id": 3,
+    "type": "判断题",
+    "question": "若 a > b，则对于任意实数 c，均有 ac > bc。",
+    "options": [
+      "正确",
+      "错误"
+    ],
+    "answer": "B",
+    "explanation": "当 c < 0 时，不等号方向反转。",
+    "meta": {},
+    "finished": false
+  },
+  "fill": {
+    "id": 4,
+    "type": "填空题",
+    "question": "计算：∫₀¹ 2x dx = ____。",
+    "options": [],
+    "answer": "1",
+    "explanation": "原函数为 x²，因此定积分为 1。",
+    "meta": {},
+    "finished": false
+  },
+  "short": {
+    "id": 5,
+    "type": "简答题",
+    "question": "列举操作系统的三项主要职责。",
+    "options": [],
+    "answer": "进程管理；内存管理；文件管理",
+    "explanation": "操作系统负责进程、内存、文件等资源管理。",
+    "meta": {},
+    "finished": false
+  }
+}
