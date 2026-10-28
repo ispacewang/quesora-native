@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-ROOT_FILES = {"go.mod", "go.sum", "mygo.json", "README.md", "LICENSE", "NOTICE", "CHANGELOG.md", ".gitignore", "build-preview.py"}
+ROOT_FILES = {"go.mod", "go.sum", "mygo.json", "README.md", "LICENSE", "NOTICE", "CHANGELOG.md", ".gitignore", ".gitattributes", "build-preview.py"}
 QA_FILES = {"qa/audit_repository.py", "qa/verify_executable.py", "qa/winres/main.go", "qa/winres/go.mod", "qa/winres/go.sum"}
 OTHER_FILES = {".github/workflows/windows.yml", "docs/usage.md", "docs/images/preview-light.png", "testdata/legacy.xls"}
 SECRET_PATTERNS = [

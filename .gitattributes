@@ -1,0 +1,13 @@
+# Keep formatter-sensitive sources stable on Windows checkouts.
+/*.go text eol=lf
+/*.py text eol=lf
+/go.mod text eol=lf
+/go.sum text eol=lf
+/.github/workflows/*.yml text eol=lf
+/qa/*.py text eol=lf
+/qa/winres/*.go text eol=lf
+/qa/winres/go.mod text eol=lf
+/qa/winres/go.sum text eol=lf
+*.png -text
+*.gz -text
+*.xls -text
