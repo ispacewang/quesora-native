@@ -21,6 +21,10 @@ type response struct {
 	Correct     bool
 }
 type app struct {
+	settingsOpen, backupBusy, backupError                          bool
+	backupMessage, lastPreferences                                 string
+	pickBackup                                                     func() (string, error)
+	showDataFolder                                                 func() error
 	repeatPractice                                                 bool
 	resetPracticeOpen                                              bool
 	attemptAnsweredID, reviewedQuestionID                          string
@@ -103,6 +107,7 @@ func (a *app) navigate(index int) {
 	if !a.repeatPractice {
 		a.restoreCurrentAnswer()
 	}
+	a.persistPreferences()
 }
 func (a *app) choose(i int) {
 	q, ok := a.current()

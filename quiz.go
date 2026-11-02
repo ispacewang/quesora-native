@@ -20,6 +20,10 @@ func (a *app) quiz(c *ui.Context) {
 						text = "选择一个题库开始答题"
 					}
 					ui.Text(c, text).FontSize(14).TextColor(c.Theme().TextMuted)
+					if len(a.questions) == 0 {
+						ui.Text(c, "导入 Excel 或 CSV，开始积累你的学习记录。").FontSize(12).FillWidth().TextAlign(ui.Center).TextColor(c.Theme().TextMuted)
+						control(c, "first-import", "导入第一个题库", uploadIcon, primaryButton, a.openImport).Label("导入第一个题库").Height(34)
+					}
 					if a.bank != "" {
 						control(c, "show-all", "查看全部题目", nil, ghostButton, func() {
 							a.filter = "全部"
@@ -72,6 +76,7 @@ func (a *app) quiz(c *ui.Context) {
 						ui.Text(c, a.notice).FontSize(12).TextColor(c.Theme().Danger).FillWidth().Margin(0, 0, 8, 0)
 					}
 					ui.Row(c.Key("question-actions")).FillWidth().Padding(16, 0, 0, 0).BorderWidth(1, 0, 0, 0).BorderColor(c.Theme().Border.Alpha(.4)).Gap(10).Children(func() {
+						control(c, "prev", "上一题", leftIcon, outlineButton, func() { a.navigate(a.index - 1) }).Label("上一题").Height(32).Disabled(a.index == 0)
 						if done {
 							control(c, "next", "下一题 →", nil, primaryButton, a.nextQuestion).Label("下一题").Height(32)
 						} else {
@@ -110,52 +115,61 @@ func (a *app) quiz(c *ui.Context) {
 }
 func (a *app) questionToolbar(c *ui.Context, q question) {
 	t := c.Theme()
-	ui.Row(c.Key("question-heading")).FillWidth().AlignItems(ui.Center).Gap(8).Wrap().Padding(0, 0, 12, 0).Margin(0, 0, 16, 0).BorderWidth(0, 0, 1, 0).BorderColor(t.Border.Alpha(.4)).Children(func() {
-		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
-			ui.Text(c, q.Kind).FontSize(12).FontWeight(600).LineHeight(1.33).Padding(2, 10).Background(t.Accent).TextColor(t.AccentText)
+	counts := map[string]int{}
+	for _, item := range a.questions {
+		if item.Bank == a.bank {
+			counts["全部"]++
+			counts[item.Kind]++
+			if a.starred[item.ID] {
+				counts["重要"]++
+			}
+		}
+	}
+	ui.Column(c.Key("question-heading")).Label("刷题工具栏").FillWidth().Gap(12).Padding(0, 0, 16, 0).Margin(0, 0, 20, 0).BorderWidth(0, 0, 1, 0).BorderColor(t.Border.Alpha(.5)).Children(func() {
+		ui.Row(c).FillWidth().Gap(8).Wrap().AlignItems(ui.Center).Children(func() {
+			ui.Text(c, q.Kind).FontSize(12).FontWeight(600).Padding(2, 10).Background(t.Accent).TextColor(t.AccentText)
 			if a.starred[q.ID] {
 				ui.Text(c, "重要题目").FontSize(12).Padding(2, 10).Background(t.Danger).TextColor(t.AccentText)
 			}
 			if name, _ := q.Meta["题目分类"].(string); name != "" {
-				ui.Text(c, name).FontSize(12).Padding(2, 10).Background(t.Surface)
+				ui.Text(c, name).FontSize(12).MaxWidth(200).SingleLine().Padding(2, 10).Background(t.Surface)
 			}
+			ui.Spacer(c)
+			ui.Text(c, fmt.Sprintf("%d / %d", a.index+1, len(a.visible()))).Label("当前题目进度").FontSize(12).TextColor(t.TextMuted)
 		})
-		ui.Spacer(c)
-		ui.Row(c.Key("modes")).Gap(8).AlignItems(ui.Center).Wrap().Children(func() {
-			ui.Row(c.Key("filters")).Gap(2).AlignItems(ui.Center).Children(func() {
-				for _, kind := range []string{"全部", "单选题", "多选题", "判断题", "简答题", "填空题", "重要"} {
-					label := kind
-					if kind == "简答题" {
-						label = "简答"
-					}
-					if kind == "填空题" {
-						label = "填空"
-					}
-					active := a.filter == kind
-					if len(a.filters) > 0 {
-						active = a.filters[kind]
-					}
-					if kind == "重要" {
-						active = a.importantOnly
-					}
-					b := ui.ButtonBase(c.Key("filter-"+kind)).Label("筛选"+kind).Padding(2, 6).Border(1, ui.Transparent).Height(20).TextColor(t.TextMuted).OnClick(func() { a.toggleFilter(kind) })
-					if active {
-						b.BorderColor(t.Accent.Alpha(.4)).Background(t.Accent.Alpha(.1)).TextColor(t.Accent)
-					}
-					b.Children(func() {
-						ui.Text(c, label).FontSize(10).LineHeight(1.4)
+		ui.Row(c.Key("filters")).Label("题型筛选").FillWidth().Gap(4).Wrap().AlignItems(ui.Center).Children(func() {
+			ui.Text(c, "题型").FontSize(11).TextColor(t.TextMuted).Margin(0, 4, 0, 0)
+			for _, kind := range []string{"全部", "单选题", "多选题", "判断题", "简答题", "填空题", "重要"} {
+				label := kind
+				if kind == "简答题" {
+					label = "简答"
+				}
+				if kind == "填空题" {
+					label = "填空"
+				}
+				active := a.filter == kind
+				if len(a.filters) > 0 {
+					active = a.filters[kind]
+				}
+				if kind == "重要" {
+					active = a.importantOnly
+				}
+				button := ui.ButtonBase(c.Key("filter-"+kind)).Label("筛选"+kind).Height(26).Padding(2, 6).Shrink(0).Border(1, ui.Transparent).TextColor(t.TextMuted).OnClick(func() { a.toggleFilter(kind) })
+				if active {
+					button.BorderColor(t.Accent.Alpha(.4)).Background(t.Accent.Alpha(.08)).TextColor(t.Accent)
+				}
+				button.Children(func() {
+					ui.Row(c).AlignItems(ui.Center).Gap(4).Children(func() {
+						ui.Text(c, label).FontSize(11).LineHeight(1.4)
 						if active {
-							count := 0
-							for _, item := range a.questions {
-								if item.Bank == a.bank && (kind == "全部" || kind == item.Kind || kind == "重要" && a.starred[item.ID]) {
-									count++
-								}
-							}
-							ui.Text(c, fmt.Sprint(count)).Absolute().Top(-10).Left(0).Right(0).FontSize(9).TextColor(t.TextMuted.Alpha(.7)).TextAlign(ui.Center)
+							ui.Text(c, fmt.Sprint(counts[kind])).FontSize(10).FontWeight(600)
 						}
 					})
-				}
-			})
+				})
+			}
+		})
+		ui.Row(c.Key("modes")).Label("练习模式").FillWidth().Gap(6).Wrap().AlignItems(ui.Center).Children(func() {
+			ui.Text(c, "练习").FontSize(11).TextColor(t.TextMuted).Margin(0, 4, 0, 0)
 			for _, mode := range []struct {
 				name   string
 				tip    string
@@ -164,13 +178,13 @@ func (a *app) questionToolbar(c *ui.Context, q question) {
 				fn     func()
 			}{
 				{"重新作答", "开启后，做过的题也可重新作答；提交后更新该题记录。关闭后显示上次结果。", a.repeatPractice, historyIcon, a.toggleRepeatPractice},
-				{"随机", "开启后随机排列题目顺序，一轮内不重复；关闭后按原顺序练习。", a.random, shuffleIcon, func() { a.random = !a.random; a.reorder(); a.navigate(0) }}, {"速刷", "开启后提交答案会自动进入下一题；关闭后停留查看本题结果。", a.quick, zapIcon, func() { a.quick = !a.quick }}, {"打乱", "开启后打乱选择题的选项顺序；关闭后恢复原顺序，正确答案随选项同步。", a.shuffle, shuffleIcon, func() { a.shuffle = !a.shuffle; a.prepareOptions() }},
+				{"随机", "开启后随机排列题目顺序，一轮内不重复；关闭后按原顺序练习。", a.random, shuffleIcon, a.toggleRandom}, {"速刷", "开启后提交答案会自动进入下一题；关闭后停留查看本题结果。", a.quick, zapIcon, a.toggleQuick}, {"打乱", "开启后打乱选择题的选项顺序；关闭后恢复原顺序，正确答案随选项同步。", a.shuffle, shuffleIcon, a.toggleShuffle},
 			} {
 				style := outlineButton
 				if mode.active {
 					style = primaryButton
 				}
-				control(c, "mode-"+mode.name, mode.name, mode.s, style, mode.fn).Tooltip(mode.tip)
+				control(c, "mode-"+mode.name, mode.name, mode.s, style, mode.fn).Tooltip(mode.tip).Shrink(0)
 			}
 		})
 	})

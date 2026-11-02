@@ -11,3 +11,6 @@
 *.png -text
 *.gz -text
 *.xls -text
+
+/packaging/*.iss text eol=lf
+/packaging/*.isl text eol=lf

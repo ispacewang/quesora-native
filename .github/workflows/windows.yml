@@ -39,7 +39,9 @@ jobs:
         run: python qa/audit_repository.py
       - name: Test, verify, build and package
         id: package
-        run: python build-preview.py
+        run: python build-preview.py --installer
+      - name: Verify installer upgrades and data retention
+        run: python qa/installer_smoke.py
       - name: Upload verified distribution
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
