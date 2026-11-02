@@ -26,4 +26,11 @@ func main() {
 	must(err)
 	must(rs.WriteObject(out, winres.ArchAMD64))
 	must(out.Close())
+
+	if len(os.Args) > 3 {
+		ico, err := os.Create(os.Args[3])
+		must(err)
+		must(icon.SaveICO(ico))
+		must(ico.Close())
+	}
 }

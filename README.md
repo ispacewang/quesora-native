@@ -17,7 +17,7 @@ Quesora 的 Go + [MyGo](https://github.com/egoist/mygo) 原生 Windows 实现。
 | --- | --- | --- |
 | 界面与运行时 | Electron + Vue 3，网页组件 | Go + MyGo，原生绘制，无浏览器运行时 |
 | 内存观察 | 约 160 MB | 约 30 MB |
-| Windows x64 成品 | NSIS 安装包，尚未与本版统一测量体积 | EXE 约 28.54 MiB；便携 ZIP 约 16.25 MiB |
+| Windows x64 成品 | NSIS 安装包，尚未与本版统一测量体积 | EXE 约 28.58 MiB；便携 ZIP 约 16.27 MiB |
 | 基本刷题 | 五种题型、筛选、随机、速刷、错题本 | 已实现，并支持重新作答开关、选项打乱、滚轮浏览多题库标签 |
 | Excel / CSV | 支持导入 | 支持 XLSX / XLS / CSV；识别表头说明、多工作表、分列选项和答案含义；按内容识别 Excel 格式 |
 | 考试与记录 | 自定义组卷、计时、成绩和历史 | 已实现；支持疑题标记、到期交卷、重要题规则、成绩与错题本保存 |
@@ -25,20 +25,24 @@ Quesora 的 Go + [MyGo](https://github.com/egoist/mygo) 原生 Windows 实现。
 | 公式、几何 | KaTeX / JSXGraph | 通用 LaTeX 和交互几何尚未完整移植，不能视为等价替代 |
 | PDF 试卷 | 网页排版与 PDF 导出 | 原生中文 PDF、分页和答案导出；复杂公式和图形排版尚未还原 |
 | AI 生成 / AI 判题 | 已提供 | 尚未移植，界面已隐藏 AI 入口；简答使用本地要点匹配 |
-| 自动更新 | 已提供 | 尚未接入客户端自动更新；GitHub Actions 自动构建发布供手动下载 |
-| 数据 | Electron 本地数据 | 独立 SQLite 数据目录，暂不自动迁移 Electron 数据 |
+| 自动更新 | 已提供 | 支持安装器覆盖升级；客户端自动下载更新尚未接入 |
+| 数据 | Electron 本地数据 | 独立 SQLite 数据目录，设置内可备份；暂不自动迁移 Electron 数据 |
 
 内存数字来自作者在同一台电脑上的手工观察，约减少 81%；没有统一统计进程集合、工作集口径、题库规模或运行时长，不是标准性能基准。体积为当前原生预览构建的近似值，内置中文字体与资源；后续功能会影响结果。
 
 ## 下载与使用
 
-在 [Releases](https://github.com/ispacewang/quesora-native/releases) 下载 Windows x64 便携 ZIP，解压到可写目录后运行 `QuesoraNativePreview.exe`；也可使用独立 EXE。包含 `preview` 的版本属于预发布。
+在 [Releases](https://github.com/ispacewang/quesora-native/releases) 下载 Windows x64 安装包（`*-setup-windows-x64.exe`，从 preview.4 开始提供），或下载便携 ZIP 解压运行 `QuesoraNativePreview.exe`。包含 `preview` 的版本属于预发布。
+
+安装包为当前用户安装，无需管理员权限。首次可选择安装位置；再次安装会沿用原路径并覆盖程序文件，保留题库、答题记录和学习设置。同版本可重装，旧版本安装包会拒绝降级覆盖。
 
 支持 Windows 10/11 x64。Mica 的实际效果取决于 Windows 版本和透明效果设置，不支持时使用普通主题背景。程序未进行代码签名。
 
 点击「上传题库」选择 `.xlsx`、`.xls` 或 `.csv`。支持单选、多选、判断、填空、简答；无法确定的数据会提示来源行。文件最大 64 MiB，每个工作表最多十万行。程序不会修改上传的原文件。
 
-数据保存到程序旁的 `data/questions.db`，或通过 `-data-dir` 指定；备份和升级时保留该目录。完整操作及格式说明见 [使用说明](docs/usage.md)。
+安装版的数据在 `%LOCALAPPDATA%\QuesoraNative\data\questions.db`，卸载后仍保留。便携版仍使用程序旁的 `data/questions.db`，或通过 `-data-dir` 指定。若安装到旧便携版所在目录，首次启动会将该目录的旧数据库一致性快照迁移到用户数据目录，保留原文件；目标已有数据库时不会覆盖。其他便携目录不会自动扫描。
+
+顶部「设置」可切换学习偏好、打开数据目录和备份全部数据。主题、练习模式、筛选与当前题目会在重启后恢复。完整操作及格式说明见 [使用说明](docs/usage.md)。
 
 ## 从源码构建
 
@@ -50,12 +54,13 @@ cd quesora-native
 python build-preview.py
 ```
 
-脚本在临时目录检查格式、校验依赖、运行 Go 测试和 MyGo 静态检查，构建带图标与高 DPI 清单的 EXE，生成离屏界面截图、带许可证的便携 ZIP 和 SHA-256 校验文件。常用预览文件在 `build/`，版本化发布文件在 `build/release/`。
+脚本在临时目录检查格式、校验依赖、运行 Go 测试和 MyGo 静态检查，构建带图标与高 DPI 清单的 EXE，生成离屏界面截图、带许可证的便携 ZIP 和 SHA-256 校验文件。常用预览文件在 `build/`，版本化发布文件在 `build/release/`。额外安装 Inno Setup 6.7.1+ 后，运行 `python build-preview.py --installer` 可同时生成安装包；也可用 `--iscc` 指定编译器路径。
 
 ## 自动检查与发布
 
 - 推送 `main` 或提交 Pull Request：在 Windows runner 自动检查、测试、构建并上传 Actions 产物。
-- 推送 `v*` 版本标签：完成相同检查后自动创建 GitHub Release，附带 EXE、ZIP 和校验文件。含连字符的预览版本自动标记为 prerelease。
+- 推送 `v*` 版本标签：完成相同检查后自动创建 GitHub Release，附带安装包、EXE、ZIP 和校验文件。含连字符的预览版本自动标记为 prerelease。
+- 发布前在临时 Windows runner 验证自定义目录安装、不指定路径升级、EXE 覆盖、同版本重装、降级拦截和卸载保留数据。
 - Actions 页面可手动运行检查和打包。Release 使用仓库自带的 `GITHUB_TOKEN`，无需在源码中配置个人 Token。
 
 例如：

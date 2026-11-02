@@ -11,10 +11,11 @@ import subprocess
 import sys
 import tempfile
 import zipfile
+from qa.installer import build_installer
 
 ROOT = pathlib.Path(__file__).resolve().parent
 VERSION_RE = r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?"
-SCENES = ["history", "empty", "unselected", "multi", "judge", "fill", "short", "selected", "correct", "wrong", "important", "exam", "exam-result", "exam-setup", "exam-setup-empty", "many-banks"]
+SCENES = ["settings", "history", "empty", "unselected", "multi", "judge", "fill", "short", "selected", "correct", "wrong", "important", "exam", "exam-result", "exam-setup", "exam-setup-empty", "many-banks"]
 
 
 def build_version(value):
@@ -50,7 +51,7 @@ def module_licenses(module_root, target, env):
                 shutil.copyfile(item, dest / item.name)
 
 
-def build(stage, distribution, version, env):
+def build(stage, distribution, version, env, installer=False, iscc=None):
     for source in ROOT.glob("*.go"):
         shutil.copy2(source, stage / source.name)
     for name in ("go.mod", "go.sum"):
@@ -68,7 +69,7 @@ def build(stage, distribution, version, env):
     resource_module = ROOT / "qa" / "winres"
     run(["go", "mod", "download"], resource_module, env)
     run(["go", "mod", "verify"], resource_module, env)
-    run(["go", "run", ".", ROOT / "resources" / "icon.png", stage / "quesora_windows_amd64.syso"], resource_module, env)
+    run(["go", "run", ".", ROOT / "resources" / "icon.png", stage / "quesora_windows_amd64.syso", stage / "quesora.ico"], resource_module, env)
     out = ROOT / "build"
     out.mkdir(exist_ok=True)
     executable = out / "QuesoraNativePreview.exe"
@@ -78,7 +79,8 @@ def build(stage, distribution, version, env):
     scenes = [("light", []), ("dark", ["-dark"]), ("upload", ["-show-upload"]),
               ("exam-setup-dark", ["-scene", "exam-setup", "-dark"]),
               ("many-banks-dark", ["-scene", "many-banks", "-dark"]),
-              ("history-dark", ["-scene", "history", "-dark"])]
+              ("history-dark", ["-scene", "history", "-dark"]),
+              ("settings-dark", ["-scene", "settings", "-dark"])]
     scenes += [(name, ["-scene", name]) for name in SCENES]
     for name, args in scenes:
         run([executable, "-snapshot", out / ("preview-" + name + ".png"), *args], stage, env)
@@ -110,20 +112,25 @@ def build(stage, distribution, version, env):
             if name.lower().endswith((".db", ".sqlite", ".log", ".pem", ".key")) or name.startswith(("data/", ".")):
                 raise RuntimeError("Unexpected archive member: " + name)
     shutil.copy2(release_zip, out / "QuesoraNativePreview-windows-x64.zip")
+    artifacts = [release_exe, release_zip]
+    if installer:
+        artifacts.append(build_installer(ROOT, distribution, version, stage / "quesora.ico", release, iscc))
     checksum = release / (prefix + "-SHA256SUMS.txt")
-    checksum.write_text("".join(hashlib.sha256(p.read_bytes()).hexdigest() + "  " + p.name + "\n" for p in (release_exe, release_zip)), encoding="utf-8", newline="\n")
-    report = {"version": version, "artifacts": [{"name": p.name, "bytes": p.stat().st_size} for p in (release_exe, release_zip, checksum)]}
+    checksum.write_text("".join(hashlib.sha256(p.read_bytes()).hexdigest() + "  " + p.name + "\n" for p in artifacts), encoding="utf-8", newline="\n")
+    report = {"version": version, "artifacts": [{"name": p.name, "bytes": p.stat().st_size} for p in [*artifacts, checksum]]}
     (out / "release-report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     if os.environ.get("GITHUB_OUTPUT"):
         with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
             output.write("version=" + version + "\n")
-    for p in (release_exe, release_zip):
+    for p in artifacts:
         print(p.name, round(p.stat().st_size / 1048576, 2), "MiB", flush=True)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--version", help="Override the source version (v prefix accepted)")
+    parser.add_argument("--installer", action="store_true", help="Also compile the upgradeable Windows installer")
+    parser.add_argument("--iscc", help="Path to Inno Setup ISCC.exe")
     args = parser.parse_args()
     if platform.system() != "Windows":
         parser.error("Build on Windows x64; this script also runs the produced EXE for snapshot checks")
@@ -138,7 +145,7 @@ def main():
         stage, distribution = workspace / "source", workspace / "distribution"
         stage.mkdir()
         distribution.mkdir()
-        build(stage, distribution, version, env)
+        build(stage, distribution, version, env, args.installer, args.iscc)
 
 
 if __name__ == "__main__":
