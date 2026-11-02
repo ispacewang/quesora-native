@@ -83,4 +83,5 @@ func (a *app) togglePanel(width float32, left bool) {
 			a.leftOpen = false
 		}
 	}
+	a.persistPreferences()
 }

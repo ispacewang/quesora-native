@@ -8,25 +8,9 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 )
 
-func defaultDataDir() string {
-	exe, err := os.Executable()
-	if err != nil {
-		return "data"
-	}
-	dir := filepath.Dir(exe)
-	// Source builds and packaged builds share data when run from this project.
-	if _, err := os.Stat(filepath.Join(filepath.Dir(dir), "mygo.json")); err == nil {
-		dir = filepath.Dir(dir)
-	}
-	if cwd, err := os.Getwd(); err == nil {
-		if _, err = os.Stat(filepath.Join(cwd, "mygo.json")); err == nil {
-			dir = cwd
-		}
-	}
-	return filepath.Join(dir, "data")
-}
 func main() {
 	snapshot := flag.String("snapshot", "", "render a preview PNG")
 	dark := flag.Bool("dark", false, "dark appearance")
@@ -34,6 +18,12 @@ func main() {
 	dataDir := flag.String("data-dir", "", "directory for native question data")
 	scene := flag.String("scene", "single", "preview scenario")
 	flag.Parse()
+	darkSpecified := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "dark" {
+			darkSpecified = true
+		}
+	})
 	a := newApp()
 	a.dark = *dark
 	a.importOpen = *showUpload
@@ -51,16 +41,24 @@ func main() {
 		}
 		return
 	}
+	var locationErr error
 	if *dataDir == "" {
-		*dataDir = defaultDataDir()
+		var location dataLocation
+		location, locationErr = defaultDataLocation()
+		if locationErr == nil {
+			*dataDir = location.Dir
+			locationErr = prepareInstalledData(location)
+		}
 	}
 	a.shuffle = true
 	a.leftOpen = false
 	a.rightOpen = false
 	a.questions = nil
 	a.bank = ""
-	var initErr error
-	a.store, initErr = openQuestionStore(filepath.Join(*dataDir, "questions.db"))
+	var initErr = locationErr
+	if initErr == nil {
+		a.store, initErr = openQuestionStore(filepath.Join(*dataDir, "questions.db"))
+	}
 	if initErr == nil {
 		defer a.store.close()
 		a.questions, initErr = a.store.load()
@@ -81,7 +79,13 @@ func main() {
 		if initErr == nil {
 			a.syncStars()
 
-			a.navigate(0)
+			if err := a.restorePreferences(); err != nil {
+				a.libraryStatus = "学习设置读取失败，已使用默认显示方式"
+				a.navigate(0)
+			}
+			if darkSpecified {
+				a.dark = *dark
+			}
 			if a.libraryStatus == "" {
 				a.libraryStatus = "题库与答题记录自动保存"
 			}
@@ -97,10 +101,14 @@ func main() {
 		}
 		a.win = mygo.NewWindow(mygo.WindowOptions{Title: "Quesora · 原生界面还原", Width: 1450, Height: 800, MinWidth: 800, MinHeight: 500, TitleBarStyle: mygo.TitleBarHidden, TitleBarHeight: 44, Vibrancy: mygo.VibrancyMica, Content: ui.View(a.view)})
 		a.dispatch = a.win.Update
+		a.pickBackup = func() (string, error) {
+			return mygo.Dialog.Save(mygo.SaveDialogOptions{Parent: a.win, Title: "备份全部题库与记录", DefaultPath: "Quesora备份-" + time.Now().Format("20060102-150405") + ".db", Filters: []mygo.FileFilter{{Name: "Quesora 数据备份", Extensions: []string{"db"}}}})
+		}
+		a.showDataFolder = func() error { return mygo.Shell.OpenPath(filepath.Dir(a.store.path)) }
 		a.pickFile = func() ([]string, error) {
 			return mygo.Dialog.Open(mygo.OpenDialogOptions{Parent: a.win, Title: "上传题库", Filters: []mygo.FileFilter{{Name: "题库文件", Extensions: []string{"xlsx", "xls", "csv"}}}})
 		}
-		a.win.OnClosed(func() { a.closed = true })
+		a.win.OnClosed(func() { a.persistPreferences(); a.closed = true })
 		a.win.OnFileDrop(func(e *mygo.FileDropEvent) {
 			paths := append([]string(nil), e.Paths...)
 			a.win.Update(func() {

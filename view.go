@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 )
 
@@ -22,6 +21,7 @@ func (a *app) view(c *ui.Context) {
 		a.titlebar(c)
 		ui.Row(c.Key("toolbar")).Background(chromeBackground(c)).FillWidth().Height(toolbarHeight).Shrink(0).Padding(6, 16).BorderWidth(0, 0, 1, 0).BorderColor(t.Border.Alpha(.5)).AlignItems(ui.Center).Children(func() {
 			control(c, "help", "", helpIcon, ghostButton, func() { a.helpOpen = true }).Label("功能引导").TextColor(t.Text).Size(28, 28).Padding(0).Tooltip("功能引导")
+			control(c, "settings", "设置", settingsIcon, ghostButton, a.openSettings).Label("设置").TextColor(t.Text).Tooltip("学习设置与数据备份")
 			ui.Spacer(c)
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 				control(c, "exam", "考试", plusIcon, primaryButton, a.openExamSetup).Disabled(a.exam != nil)
@@ -50,11 +50,12 @@ func (a *app) view(c *ui.Context) {
 	a.examDialogs(c)
 	a.historyView(c)
 	a.libraryDialogs(c)
+	a.settingsDialog(c)
 	if a.libraryStatus != "" && a.libraryStatus != "题库与答题记录自动保存" && a.libraryStatus != a.toastLast {
 		a.toastLast = a.libraryStatus
 		c.Toast(a.libraryStatus)
 	}
-	if a.exam == nil && !a.examSetupOpen && !a.historyOpen && a.quick && !a.answerHandle.FocusWithin(c) && !a.importOpen && !a.deleteOpen && !a.helpOpen && !a.resetPracticeOpen && !a.finishOpen {
+	if a.exam == nil && !a.examSetupOpen && !a.historyOpen && !a.settingsOpen && a.quick && !a.answerHandle.FocusWithin(c) && !a.importOpen && !a.deleteOpen && !a.helpOpen && !a.resetPracticeOpen && !a.finishOpen {
 		for i, key := range []ui.Key{ui.KeyA, ui.KeyB, ui.KeyC, ui.KeyD} {
 			c.OnShortcut(0, key, func() {
 				if q, ok := a.current(); ok {
@@ -100,16 +101,7 @@ func (a *app) titlebar(c *ui.Context) {
 		if a.dark {
 			symbol, label = sunIcon, "浅色模式"
 		}
-		control(c, "theme", "", symbol, ghostButton, func() {
-			a.dark = !a.dark
-			if a.win != nil {
-				if a.dark {
-					mygo.Theme.SetSource(mygo.ThemeDark)
-				} else {
-					mygo.Theme.SetSource(mygo.ThemeLight)
-				}
-			}
-		}).Label(label).Tooltip(label).TextColor(t.Text).Size(36, 44).Padding(10).Background(ui.Transparent)
+		control(c, "theme", "", symbol, ghostButton, a.toggleTheme).Label(label).Tooltip(label).TextColor(t.Text).Size(36, 44).Padding(10).Background(ui.Transparent)
 		if bar.Right > 0 {
 			ui.Box(c).Width(bar.Right).Height(44).Shrink(0)
 			return

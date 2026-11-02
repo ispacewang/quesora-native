@@ -7,6 +7,7 @@ func svgIcon(paths string) *ui.SVG {
 }
 
 var (
+	settingsIcon = svgIcon(`<circle cx="12" cy="12" r="3"/><path d="M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1z"/>`)
 	downloadIcon = svgIcon(`<path d="M21 15v4H3v-4m9-12v12m-5-5 5 5 5-5"/>`)
 	bookIcon     = svgIcon(`<path d="M12 7v14m0-14C9 4 4 4 2 5v15c3-1 7-1 10 1 3-2 7-2 10-1V5c-3-1-7-1-10 2z"/>`)
 	closeIcon    = svgIcon(`<path d="M18 6 6 18M6 6l12 12"/>`)

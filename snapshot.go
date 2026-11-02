@@ -33,6 +33,9 @@ func (a *app) configureScene(scene string) {
 	a.questions = append(a.questions, question{ID: "c1", Bank: "计算机基础", Kind: "单选题", Prompt: "下列哪一种数据结构遵循先进先出？", Options: []string{"栈", "队列"}, Answer: 2})
 	a.navigate(0)
 	switch scene {
+	case "settings":
+		a.settingsOpen = true
+		a.store = &questionStore{path: "data/questions.db"}
 	case "history":
 		a.historyOpen = true
 	case "many-banks":

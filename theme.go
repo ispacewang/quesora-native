@@ -7,7 +7,7 @@ func previewTheme(dark bool) *ui.Theme {
 	t.Background = ui.Hex("#fafaf9")
 	t.Surface = ui.Hex("#f0f0ee")
 	t.Text = ui.Hex("#2c2c2e")
-	t.TextMuted = ui.Hex("#8e8e93")
+	t.TextMuted = ui.Hex("#737379")
 	t.Border = ui.RGBA(0, 0, 0, .10)
 	t.Accent = ui.Hex("#4a7dbf")
 	t.AccentText = ui.Hex("#ffffff")
