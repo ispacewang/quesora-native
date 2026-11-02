@@ -1,4 +1,5 @@
 """CI-only install/upgrade/uninstall regression; never launch the application UI."""
+from contextlib import closing
 import hashlib
 import json
 import os
@@ -62,9 +63,10 @@ def main():
             executable = custom / "QuesoraNativePreview.exe"
             executable.write_bytes(b"old executable must be replaced during upgrade")
             data.mkdir(parents=True)
-            with sqlite3.connect(db) as conn:
+            with closing(sqlite3.connect(db)) as conn:
                 conn.execute("CREATE TABLE upgrade_fixture(value TEXT)")
                 conn.execute("INSERT INTO upgrade_fixture VALUES('preserve study records')")
+                conn.commit()
             before = digest(db)
             # Deliberately omit /DIR: the upgrade must discover the previous path.
             run_setup(setup)
