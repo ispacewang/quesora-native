@@ -92,6 +92,9 @@ def build(stage, distribution, version, env, installer=False, iscc=None):
     licenses.mkdir()
     for module_root in (stage, resource_module):
         module_licenses(module_root, licenses, env)
+    installer_license = licenses / "Inno-Setup"
+    installer_license.mkdir()
+    shutil.copyfile(ROOT / "packaging/INNO-LICENSE.txt", installer_license / "LICENSE.txt")
     font_license = licenses / "Noto-Sans-SC"
     font_license.mkdir()
     for name in ("LICENSE.txt", "OFL.txt"):
