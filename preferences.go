@@ -1,3 +1,5 @@
+// 版本化学习偏好的快照/重载。先在 UI 线程序列化，再将不可变 JSON 交给串行任务队列。
+
 package main
 
 import (
@@ -9,6 +11,7 @@ import (
 	"sort"
 )
 
+// learningPreferences 是 SQLite 中的版本化设置快照；QuestionID 在题序重建后用于恢复位置。
 type learningPreferences struct {
 	Version                                           int
 	Dark, Random, Quick, Shuffle, LeftOpen, RightOpen bool
@@ -17,6 +20,7 @@ type learningPreferences struct {
 	ImportantOnly, OnlyWrong                          bool
 }
 
+// preferences 在 UI 线程捕获可序列化值，并排序筛选集合，使去重比较不受 map 迭代顺序影响。
 func (a *app) preferences() learningPreferences {
 	p := learningPreferences{Version: 1, Dark: a.dark, Random: a.random, Quick: a.quick, Shuffle: a.shuffle, LeftOpen: a.leftOpen, RightOpen: a.rightOpen, Bank: a.bank, Filter: a.filter, ImportantOnly: a.importantOnly, OnlyWrong: a.onlyWrong}
 	if q, ok := a.current(); ok {
@@ -31,8 +35,9 @@ func (a *app) preferences() learningPreferences {
 	return p
 }
 
+// persistPreferences 仅将捕获的不可变 JSON 入队；相同快照去重，写入失败允许后续重试。
 func (a *app) persistPreferences() {
-	if a.store == nil || a.jobs == nil || a.closed {
+	if a.store == nil || a.jobs == nil || a.closed || a.restoreBusy {
 		return
 	}
 	data, err := json.Marshal(a.preferences())
@@ -54,6 +59,7 @@ func (a *app) persistPreferences() {
 	}
 }
 
+// restorePreferences 在启动加载题目后恢复显示状态；失效题库回退，随机排列可重建但题目按 ID 恢复。
 func (a *app) restorePreferences() error {
 	var raw string
 	err := a.store.db.QueryRow("SELECT value FROM settings WHERE key='learning-preferences'").Scan(&raw)

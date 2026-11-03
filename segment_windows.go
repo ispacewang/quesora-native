@@ -1,5 +1,7 @@
 //go:build windows
 
+// 通过 Windows 系统 ICU 进行中文词边界划分；调用期间保持 UTF-16 缓冲区存活。
+
 package main
 
 import (

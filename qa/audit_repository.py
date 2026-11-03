@@ -6,8 +6,8 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 ROOT_FILES = {"go.mod", "go.sum", "mygo.json", "README.md", "LICENSE", "NOTICE", "CHANGELOG.md", ".gitignore", ".gitattributes", "build-preview.py"}
-QA_FILES = {"qa/audit_repository.py", "qa/installer.py", "qa/installer_smoke.py", "qa/verify_executable.py", "qa/winres/main.go", "qa/winres/go.mod", "qa/winres/go.sum"}
-OTHER_FILES = {".github/workflows/windows.yml", "docs/usage.md", "docs/images/preview-light.png", "testdata/legacy.xls", "packaging/quesora.iss", "packaging/ChineseSimplified.isl", "packaging/INNO-LICENSE.txt", "packaging/installed.marker", "packaging/README.md"}
+QA_FILES = {"qa/audit_repository.py", "qa/installer.py", "qa/installer_smoke.py", "qa/verify_executable.py", "qa/winres/main.go", "qa/icons/main.go", "qa/winres/go.mod", "qa/winres/go.sum"}
+OTHER_FILES = {".github/workflows/windows.yml", "docs/usage.md", "docs/development.md", "docs/images/preview-light.png", "testdata/legacy.xls", "packaging/quesora.iss", "packaging/ChineseSimplified.isl", "packaging/INNO-LICENSE.txt", "packaging/installed.marker", "packaging/README.md"}
 SECRET_PATTERNS = [
     re.compile(rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
     re.compile(rb"(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{40,}|sk-[A-Za-z0-9_-]{30,})"),

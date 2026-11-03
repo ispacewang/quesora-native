@@ -1,3 +1,5 @@
+// 练习领域模型和 UI 线程状态。选择答案按原始选项索引存储，显示顺序只在视图边界转换。
+
 package main
 
 import (
@@ -6,6 +8,8 @@ import (
 	"strings"
 )
 
+// question 是导入、练习、考试和持久化共用的标准题目。
+// Answer 的第 i 位对应 Options[i]，不是打乱后界面上显示的字母。
 type question struct {
 	ID, Bank, Kind, Prompt  string
 	Options                 []string
@@ -14,13 +18,23 @@ type question struct {
 	Graph                   bool
 	Meta                    map[string]any
 }
+
+// response 保存一次提交及其显示顺序；Choice 使用原始选项位掩码。
+// OptionOrder 使历史回顾和导出能重现提交时的选项字母。
 type response struct {
 	OptionOrder []int `json:",omitempty"`
 	Choice      uint
 	Text        string
 	Correct     bool
 }
+
+// app 持有窗口生命周期内的模型、控件状态和稳定句柄。
+// 生产环境的字段变更在 UI 线程进行；后台任务只能经 publish 发布结果。
 type app struct {
+	updates                                                        updateState
+	restoreOpen, restoreBusy, restorePicking                       bool
+	restorePath                                                    string
+	pickRestore                                                    func() (string, error)
 	settingsOpen, backupBusy, backupError                          bool
 	backupMessage, lastPreferences                                 string
 	pickBackup                                                     func() (string, error)
@@ -66,10 +80,13 @@ type app struct {
 	importWarnings                                                 []string
 }
 
+// newApp 提供离屏测试的示例初态；main 在真实启动时用本地题库替换示例。
 func newApp() *app {
 	loadNativeAssets()
 	return &app{questions: demoQuestions(), bank: "数学基础", filter: "全部", answers: map[string]response{}, starred: map[string]bool{}, leftOpen: true, rightOpen: true}
 }
+
+// visible 根据当前题库和组合筛选创建新切片，并应用本轮题序，不重排仓库原始数据。
 func (a *app) visible() []question {
 	var out []question
 	for _, q := range a.questions {
@@ -94,6 +111,8 @@ func (a *app) current() (question, bool) {
 	}
 	return qs[min(max(a.index, 0), len(qs)-1)], true
 }
+
+// navigate 开始一次新的题目访问，清空临时输入/动画并按重新作答设置恢复旧答案。
 func (a *app) navigate(index int) {
 	a.importantMotion = importantMotion{}
 	a.attemptAnsweredID = ""
@@ -109,6 +128,8 @@ func (a *app) navigate(index int) {
 	}
 	a.persistPreferences()
 }
+
+// choose 接收原始选项索引；多选按位切换，单选覆盖当前选择。
 func (a *app) choose(i int) {
 	q, ok := a.current()
 	if !ok || i < 0 || i >= len(q.Options) {
@@ -124,6 +145,8 @@ func (a *app) choose(i int) {
 	}
 	a.notice = ""
 }
+
+// submit 拒绝空答案和重复提交，更新每题最近记录，并在速刷模式切到下一题。
 func (a *app) submit() {
 	q, ok := a.current()
 	if !ok {
@@ -147,6 +170,8 @@ func (a *app) submit() {
 	}
 	a.notice = ""
 }
+
+// counts 统计当前题库的最近提交结果；未答题不计入正确或错误数量。
 func (a *app) counts() (correct, wrong int) {
 	for _, q := range a.questions {
 		if q.Bank != a.bank {
@@ -162,6 +187,8 @@ func (a *app) counts() (correct, wrong int) {
 	}
 	return
 }
+
+// letters 将位掩码转换为按原始选项顺序排列的字母，最多支持 A–Z。
 func letters(mask uint) string {
 	var s []string
 	for i := 0; i < 26; i++ {

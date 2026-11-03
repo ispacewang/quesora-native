@@ -15,7 +15,7 @@ from qa.installer import build_installer
 
 ROOT = pathlib.Path(__file__).resolve().parent
 VERSION_RE = r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?"
-SCENES = ["settings", "history", "empty", "unselected", "multi", "judge", "fill", "short", "selected", "correct", "wrong", "important", "exam", "exam-result", "exam-setup", "exam-setup-empty", "many-banks"]
+SCENES = ["restore", "update", "settings", "history", "empty", "unselected", "multi", "judge", "fill", "short", "selected", "correct", "wrong", "important", "exam", "exam-result", "exam-setup", "exam-setup-empty", "many-banks"]
 
 
 def build_version(value):
@@ -58,6 +58,8 @@ def build(stage, distribution, version, env, installer=False, iscc=None):
         shutil.copy2(ROOT / name, stage / name)
     for name in ("testdata", "third_party", "resources"):
         shutil.copytree(ROOT / name, stage / name)
+    # Export the reviewed master through the same deterministic Windows/runtime icon mask.
+    run(["go", "run", "./qa/icons", stage / "resources/icon-source.png", stage / "resources/icon.png", stage / "resources/app-icon.png"], ROOT, env)
     gofiles = sorted(stage.glob("*.go"))
     unformatted = run(["gofmt", "-l", *gofiles], stage, env, capture=True).stdout.strip()
     if unformatted:

@@ -1,3 +1,5 @@
+// 导入/删除对话框与公共模态容器；保留键盘焦点、禁用状态和可访问标签。
+
 package main
 
 import (
@@ -65,6 +67,7 @@ func (a *app) libraryDialogs(c *ui.Context) {
 	}).Width(440).Radius(0).Padding(24).Border(1, t.Border)
 }
 
+// nativeModal 统一模态遮罩和可用尺寸；回调只能使用本次构建中的元素，不可跨帧保存。
 func nativeModal(c *ui.Context, open *bool, fn func()) ui.Element {
 	w, h := c.Size()
 	return ui.DialogBase(c, open, func(back, panel ui.Element) {

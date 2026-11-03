@@ -1,3 +1,5 @@
+// 内嵌字体、软件标志和重要题资源的单次初始化，成品无需依赖系统中文字体安装情况。
+
 package main
 
 import (
@@ -15,6 +17,7 @@ var nativeAssets embed.FS
 var fontOnce sync.Once
 var appIcon *ui.Bitmap
 
+// loadNativeAssets 幂等注册内嵌字体并解码固定资源；构建期资源缺失视为程序打包错误。
 func loadNativeAssets() {
 	fontOnce.Do(func() {
 		for _, weight := range []int{400, 500, 600, 700} {

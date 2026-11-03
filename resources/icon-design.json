@@ -1,0 +1,15 @@
+{
+  "description": "橙色渐变圆角矩形应用图标，白色 A/B/C/D 题卡与 Q 气泡，四角透明。",
+  "source": "User-supplied reference, adapted with built-in imagegen",
+  "prompt": "以用户参考图为基础，保留橙色渐变、白色问卷与 Q 气泡；改为圆角矩形应用图标、透明四角、清晰数字图形轮廓，适配 Windows 16–256 像素。",
+  "generated_on": "2026-11-03",
+  "master": "icon-source.png",
+  "runtime": "app-icon.png",
+  "windows": "icon.png",
+  "export": {
+    "command": "go run ./qa/icons resources/icon-source.png resources/icon.png resources/app-icon.png",
+    "cropInset": 0.085,
+    "padding": 0.045,
+    "cornerRadius": 0.2
+  }
+}

@@ -1,3 +1,5 @@
+// 自适应表头和逐行语义归一化。优先显式说明；冲突或未知答案返回警告，不生成猜测答案。
+
 package main
 
 import (
@@ -33,6 +35,7 @@ var answerPrefixRE = regexp.MustCompile("(?i)^(?:正确答案|参考答案|标�
 var missingChoiceAnswer = regexp.MustCompile("^[A-D]$|^[A-Za-z](?:[、,，;；/|＋+][A-Za-z])+$")
 var choiceSyntax = regexp.MustCompile("^[A-Z0-9\\s,，、;；/|｜+&\\[\\]()（）.．]+$")
 
+// headerName 统一全半角、大小写和说明性后缀，仅用于识别表头，不修改题目正文。
 func headerName(s string) string {
 	s = strings.ToLower(norm.NFKC.String(strings.TrimSpace(strings.TrimPrefix(s, "\ufeff"))))
 	s = headerParens.ReplaceAllString(s, "")
@@ -47,6 +50,8 @@ func headerName(s string) string {
 		return r
 	}, s)
 }
+
+// headerField 返回语义字段和可选选项序号；具体概念优先，避免将“答案解析”误判为答案。
 func headerField(s string) (string, int) {
 	n := headerName(s)
 	if m := optionHeader.FindStringSubmatch(n); m != nil {
@@ -108,6 +113,8 @@ func headerField(s string) (string, int) {
 
 	return "", -1
 }
+
+// schemaAt 评估一个候选表头及相邻说明；仅在下一行仍像表头时接受双行表头。
 func schemaAt(rows [][]string, row int) questionSchema {
 	s := questionSchema{row: row, end: row, fields: map[string]int{}, options: map[int]int{}, typeCodes: map[string]string{}}
 	add := func(c int, text string) {
@@ -164,6 +171,8 @@ func schemaAt(rows [][]string, row int) questionSchema {
 	}
 	return s
 }
+
+// discoverSchema 扫描前 50 行，按题干/答案等字段命中评分，平分时保留更早的候选。
 func discoverSchema(rows [][]string) (questionSchema, bool) {
 	best := questionSchema{}
 	score := -1
@@ -195,6 +204,8 @@ func discoverSchema(rows [][]string) (questionSchema, bool) {
 	}
 	return best, score >= 6
 }
+
+// canonicalKind 将可识别的中英文题型名称映射为五种标准题型，未知名称返回空串。
 func canonicalKind(s string) string {
 	n := strings.ToLower(strings.TrimSpace(norm.NFKC.String(s)))
 	for _, v := range []struct {
@@ -209,6 +220,8 @@ func canonicalKind(s string) string {
 	}
 	return ""
 }
+
+// splitCombinedOptions 优先识别有序字母标签，否则按常见分隔符拆分，并返回原印刷标签映射。
 func splitCombinedOptions(raw string) ([]string, []int) {
 	raw = strings.TrimSpace(norm.NFKC.String(raw))
 	if raw == "" {
@@ -255,6 +268,8 @@ func truthValue(raw string) (bool, bool) {
 	}
 	return false, false
 }
+
+// normalizedChoice 同时尝试选项内容和标签/序号解释；显式表头说明优先，冲突且无说明时拒绝猜测。
 func normalizedChoice(raw string, q question, labels []int, s questionSchema) (uint, bool) {
 	raw = strings.TrimSpace(answerPrefixRE.ReplaceAllString(norm.NFKC.String(raw), ""))
 	if q.Kind == "判断题" {
@@ -344,6 +359,7 @@ func normalizedChoice(raw string, q question, labels []int, s questionSchema) (u
 	return labelMask, labelMask != 0
 }
 
+// questionsFromRows 跳过空行、重复表头及无法确认的题目，警告保留工作表和一基行号。
 func questionsFromRows(sheet string, rows [][]string) ([]question, []string, error) {
 	var qs []question
 	var warnings []string

@@ -1,3 +1,5 @@
+// 区分安装版、便携版与源码运行的数据位置。安装版优先使用当前用户目录，不依赖工作目录。
+
 package main
 
 import (
@@ -8,12 +10,14 @@ import (
 
 const installedMarker = ".quesora-native-installed"
 
+// dataLocation 同时描述当前数据目录和允许迁移的同安装目录旧库，不扫描其他用户目录。
 type dataLocation struct {
 	Dir       string
 	LegacyDB  string
 	Installed bool
 }
 
+// resolveDataLocation 优先检查安装标记；安装版必须获得绝对用户目录，便携/源码版保留原有定位规则。
 func resolveDataLocation(exe, cwd, localData string) (dataLocation, error) {
 	dir := filepath.Dir(exe)
 	if info, err := os.Stat(filepath.Join(dir, installedMarker)); err == nil && info.Mode().IsRegular() {
@@ -44,6 +48,7 @@ func defaultDataLocation() (dataLocation, error) {
 	return resolveDataLocation(exe, cwd, local)
 }
 
+// prepareInstalledData 仅在目标库不存在时创建旧库的一致性快照；源文件保留，已有目标绝不覆盖。
 func prepareInstalledData(location dataLocation) error {
 	if !location.Installed {
 		return nil

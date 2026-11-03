@@ -1,3 +1,5 @@
+// 组卷库存和有效性派生状态，共用于数量标签、实际题量和按钮可用性。
+
 package main
 
 // One inventory pass supplies both the preview and every quantity label.

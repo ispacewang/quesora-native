@@ -1,3 +1,5 @@
+// 练习题序、筛选、选项映射和轮次切换。原始答案位掩码始终独立于选项显示顺序。
+
 package main
 
 import (
@@ -5,6 +7,7 @@ import (
 	"sort"
 )
 
+// reorder 为当前筛选题集生成本轮随机 ID 顺序；不会在每次绘制时重新抽题。
 func (a *app) reorder() {
 	a.order = nil
 	if !a.random {
@@ -52,6 +55,8 @@ func (a *app) toggleFilter(kind string) {
 	a.reorder()
 	a.navigate(0)
 }
+
+// prepareOptions 创建显示位置到原始选项索引的映射，不改写题目或正确答案。
 func (a *app) prepareOptions() {
 	a.optionOrder = nil
 	q, ok := a.current()
@@ -75,6 +80,8 @@ func (a *app) displayOptions(q question) []int {
 	}
 	return out
 }
+
+// displayAnswer 将原始正确答案映射成当前显示字母，避免选项打乱后解析字母错位。
 func (a *app) displayAnswer(q question) string {
 	if isTextQuestion(q) {
 		return q.TextAnswer
@@ -94,6 +101,8 @@ func (a *app) nextQuestion() {
 	}
 	a.navigate(a.index + 1)
 }
+
+// restartCycle 在重新作答模式保留最近记录；普通模式只清空当前题库的练习记录后开启新轮次。
 func (a *app) restartCycle() {
 	a.finishOpen = false
 	if a.repeatPractice {
@@ -123,6 +132,7 @@ func isTextQuestion(q question) bool {
 	return q.Kind == "填空题" || q.Kind == "简答题" || len(q.Options) == 0
 }
 
+// responseOrder 校验历史选项映射是完整排列；缺失或损坏时回退原顺序，防止越界读取。
 func responseOrder(q question, r response) []int {
 	if len(r.OptionOrder) == len(q.Options) {
 		seen := map[int]bool{}

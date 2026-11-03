@@ -1,3 +1,5 @@
+// 原生组卷表单与数字编辑状态。临时输入文本独立于有效数值，非法值在开始/导出前提示。
+
 package main
 
 import (
@@ -141,6 +143,7 @@ func examExportButton(c *ui.Context, key, label string, symbol *ui.SVG, fn func(
 	return b
 }
 
+// examNumberEdit 保存编辑中的字符串与已同步数值，使清空/非法输入不会在重建时被默认值覆盖。
 type examNumberEdit struct {
 	Text  string
 	Value float64
@@ -157,6 +160,7 @@ func examInteger(text string, lo, hi float64) float64 {
 
 // Plain fields avoid the stock NumberInput's fixed-width text and extra buttons.
 // The range, step, text editing and Up/Down keys remain native and accessible.
+// examNumberField 绑定持久编辑状态，允许临时无效文本，并将统一校验留给组卷操作。
 func examNumberField(c *ui.Context, label string, value *float64, lo, hi float64, suffix string, onEdit func()) {
 	t := c.Theme()
 	row := ui.Row(c).Label(label+"输入框").FillWidth().MinWidth(0).Height(36).Padding(0, 10).Gap(8).AlignItems(ui.Center).Border(1, t.Border).Background(t.Background)

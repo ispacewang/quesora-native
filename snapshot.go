@@ -1,3 +1,5 @@
+// 可重复的离屏预览场景，只使用内置示例；不读写用户题库。
+
 package main
 
 import (
@@ -11,6 +13,7 @@ import (
 //go:embed resources/qa-fixtures.json
 var sceneFixtures []byte
 
+// configureScene 只配置内置样例和确定的 UI 状态，供 -snapshot 和回归截图复用。
 func (a *app) configureScene(scene string) {
 	var fixtures map[string]struct {
 		ID                                  int
@@ -33,6 +36,14 @@ func (a *app) configureScene(scene string) {
 	a.questions = append(a.questions, question{ID: "c1", Bank: "计算机基础", Kind: "单选题", Prompt: "下列哪一种数据结构遵循先进先出？", Options: []string{"栈", "队列"}, Answer: 2})
 	a.navigate(0)
 	switch scene {
+	case "restore":
+		a.settingsOpen = true
+		a.restoreOpen = true
+		a.restorePath = "Quesora备份-20261103.db"
+		a.store = &questionStore{path: "data/questions.db"}
+	case "update":
+		a.updates.confirmOpen = true
+		a.updates.installed = true
 	case "settings":
 		a.settingsOpen = true
 		a.store = &questionStore{path: "data/questions.db"}

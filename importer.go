@@ -1,3 +1,5 @@
+// 文件到标准题库的入口：限制资源用量、选择格式读取器、归一化工作表并保留来源警告。
+
 package main
 
 import (
@@ -19,14 +21,19 @@ import (
 const maxImportBytes = 64 << 20
 const maxImportRows = 100000
 
+// importedBank 表示一次解析中可独立保存的工作表题库。
 type importedBank struct {
 	Name      string
 	Questions []question
 }
+
+// importResult 同时携带标准题库和可定位来源行的警告，允许有效行导入、无效行显式跳过。
 type importResult struct {
 	Banks    []importedBank
 	Warnings []string
 }
+
+// worksheet 是各文件读取器的公共中间表示，列语义留给 questionSchema 判定。
 type worksheet struct {
 	Name string
 	Rows [][]string
@@ -34,6 +41,7 @@ type worksheet struct {
 
 var optionPrefix = regexp.MustCompile(`^(?:[A-Za-z]\s*[.、)）：:．（）—–\-]\s*)+`)
 
+// parseQuestionFile 只读取源文件，限制文件/解压/行数，并将所有格式交给相同的语义归一化流程。
 func parseQuestionFile(filename string) (result importResult, err error) {
 	info, err := os.Stat(filename)
 	if err != nil {
@@ -154,6 +162,8 @@ func parseQuestionFile(filename string) (result importResult, err error) {
 	}
 	return result, nil
 }
+
+// decodeCSV 优先识别 BOM/UTF-8，无 BOM 且非 UTF-8 时按 GB18030 兼容常见中文 CSV。
 func decodeCSV(data []byte) ([]byte, error) {
 	switch {
 	case bytes.HasPrefix(data, []byte{0xef, 0xbb, 0xbf}):
@@ -171,6 +181,8 @@ func decodeCSV(data []byte) ([]byte, error) {
 		return out, err
 	}
 }
+
+// answerMask 解码仓库中已规范化的选择答案；原始表格的歧义判定由 normalizedChoice 负责。
 func answerMask(answer, kind string, options []string) uint {
 	if kind == "简答题" || kind == "填空题" {
 		return 0

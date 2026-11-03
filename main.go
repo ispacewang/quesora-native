@@ -1,3 +1,5 @@
+// 应用入口：命令行、数据目录、窗口和后台任务的创建/关闭顺序。快照模式在打开真实数据库前返回。
+
 package main
 
 import (
@@ -101,14 +103,30 @@ func main() {
 		}
 		a.win = mygo.NewWindow(mygo.WindowOptions{Title: "Quesora · 原生界面还原", Width: 1450, Height: 800, MinWidth: 800, MinHeight: 500, TitleBarStyle: mygo.TitleBarHidden, TitleBarHeight: 44, Vibrancy: mygo.VibrancyMica, Content: ui.View(a.view)})
 		a.dispatch = a.win.Update
+		a.configureUpdater()
 		a.pickBackup = func() (string, error) {
 			return mygo.Dialog.Save(mygo.SaveDialogOptions{Parent: a.win, Title: "备份全部题库与记录", DefaultPath: "Quesora备份-" + time.Now().Format("20060102-150405") + ".db", Filters: []mygo.FileFilter{{Name: "Quesora 数据备份", Extensions: []string{"db"}}}})
+		}
+		a.pickRestore = func() (string, error) {
+			paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{Parent: a.win, Title: "选择原生数据库备份", Filters: []mygo.FileFilter{{Name: "Quesora 数据备份", Extensions: []string{"db"}}}})
+			if err != nil || len(paths) == 0 {
+				return "", err
+			}
+			return paths[0], nil
 		}
 		a.showDataFolder = func() error { return mygo.Shell.OpenPath(filepath.Dir(a.store.path)) }
 		a.pickFile = func() ([]string, error) {
 			return mygo.Dialog.Open(mygo.OpenDialogOptions{Parent: a.win, Title: "上传题库", Filters: []mygo.FileFilter{{Name: "题库文件", Extensions: []string{"xlsx", "xls", "csv"}}}})
 		}
-		a.win.OnClosed(func() { a.persistPreferences(); a.closed = true })
+		a.win.OnClosed(func() {
+			if a.updates.cancel != nil {
+				a.updates.cancel()
+			}
+			if !a.restoreBusy {
+				a.persistPreferences()
+			}
+			a.closed = true
+		})
 		a.win.OnFileDrop(func(e *mygo.FileDropEvent) {
 			paths := append([]string(nil), e.Paths...)
 			a.win.Update(func() {

@@ -1,3 +1,5 @@
+// 原生配色、按钮层级及标题栏材质回退；Mica 可用时顶栏不叠加不透明背景。
+
 package main
 
 import "github.com/egoist/mygo/ui"

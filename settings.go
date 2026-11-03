@@ -1,3 +1,5 @@
+// 设置和数据操作视图；原生文件对话框与磁盘 I/O 在后台运行，状态仅通过 publish 回写。
+
 package main
 
 import (
@@ -13,8 +15,9 @@ func (a *app) openSettings() {
 	}
 }
 
+// backupData 在文件选择后排队保存当前设置和数据快照，使已入队答案先于备份提交。
 func (a *app) backupData() {
-	if a.backupBusy || a.store == nil || a.pickBackup == nil {
+	if a.backupBusy || a.store == nil || a.pickBackup == nil || a.restoreBusy {
 		return
 	}
 	a.backupBusy, a.backupError = true, false
@@ -87,6 +90,7 @@ func settingRow(c *ui.Context, label, description string, active bool, toggle fu
 	})
 }
 
+// settingsDialog 固定底部关闭操作，正文独立滚动，使最小窗口仍可到达全部数据操作。
 func (a *app) settingsDialog(c *ui.Context) {
 	t := c.Theme()
 	_, height := c.Size()
@@ -104,6 +108,8 @@ func (a *app) settingsDialog(c *ui.Context) {
 				settingRow(c, "速刷", "提交答案后自动进入下一题。", a.quick, a.toggleQuick)
 				settingRow(c, "打乱选项", "随机调整选择题的选项顺序。", a.shuffle, a.toggleShuffle)
 				line(c)
+				a.updateSection(c)
+				line(c)
 				ui.Text(c, "数据与备份").FontSize(11).FontWeight(600).TextColor(t.TextMuted)
 				ui.Text(c, "题库、答题记录、已保存的考试和学习设置会一起备份。").FillWidth().FontSize(12).LineHeight(1.6)
 				if a.store != nil {
@@ -117,7 +123,8 @@ func (a *app) settingsDialog(c *ui.Context) {
 					if a.backupBusy {
 						text = "正在备份…"
 					}
-					control(c, "backup", text, downloadIcon, primaryButton, a.backupData).Label("备份全部数据").Disabled(a.store == nil || a.backupBusy || a.importBusy)
+					control(c, "backup", text, downloadIcon, primaryButton, a.backupData).Label("备份全部数据").Disabled(a.store == nil || a.backupBusy || a.importBusy || a.restoreBusy)
+					control(c, "restore", "从备份恢复…", historyIcon, outlineButton, a.chooseRestoreBackup).Label("从备份恢复").Disabled(a.store == nil || a.restoreBusy || a.restorePicking || a.backupBusy || a.importBusy || a.exam != nil)
 				})
 				if a.backupMessage != "" {
 					color := t.TextMuted
@@ -132,5 +139,5 @@ func (a *app) settingsDialog(c *ui.Context) {
 		ui.Row(c).FillWidth().Padding(16, 24).BorderWidth(1, 0, 0, 0).BorderColor(t.Border).Justify(ui.End).Children(func() {
 			control(c, "close", "完成", nil, outlineButton, func() { a.settingsOpen = false }).Label("关闭设置").Height(32)
 		})
-	}).Width(520).Padding(0).Gap(0)
+	}).Width(520).Padding(0).Gap(0).Disabled(a.restoreBusy || a.updates.installing)
 }

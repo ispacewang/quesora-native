@@ -1,3 +1,5 @@
+// 考试领域状态、组卷、计时、判分和记录保存。考试作答与日常练习 answers 相互隔离。
+
 package main
 
 import (
@@ -11,11 +13,14 @@ import (
 
 var examKinds = []string{"单选题", "多选题", "判断题", "简答题", "填空题"}
 
+// examSettings 与组卷表单双向绑定；数值使用 float64 以保留 NaN 等无效输入供统一校验。
 type examSettings struct {
 	Bank    string
 	Minutes float64
 	Counts  [5]float64
 }
+
+// examSession 是与练习隔离的试卷快照；题序、选项映射和重要题规则在组卷时固定。
 type examSession struct {
 	ID                                          string
 	Bank                                        string
@@ -31,6 +36,7 @@ type examSession struct {
 	preview                                     bool
 }
 
+// newExamSession 按题型随机无重复抽题，库存不足取现有数量，并固定每题的选项顺序。
 func newExamSession(qs []question, settings examSettings, stars map[string]bool, now time.Time) (*examSession, error) {
 	if err := validateExamSettings(settings); err != nil {
 		return nil, err
@@ -64,6 +70,8 @@ func newExamSession(qs []question, settings examSettings, stars map[string]bool,
 	}
 	return e, nil
 }
+
+// judgeQuestion 共用于练习和考试：选择题要求掩码完全匹配，填空归一化匹配，简答使用本地要点规则。
 func judgeQuestion(q question, r response) bool {
 	if isTextQuestion(q) {
 		if strings.TrimSpace(r.Text) == "" {
@@ -91,12 +99,16 @@ func (e *examSession) completed() int {
 	}
 	return n
 }
+
+// remaining 按绝对截止时间计算向上取整的剩余秒数，避免依赖绘制/定时器触发次数。
 func (e *examSession) remaining(now time.Time) int {
 	if e.Submitted {
 		return 0
 	}
 	return max(0, int(math.Ceil(e.Deadline.Sub(now).Seconds())))
 }
+
+// tick 使到期交卷幂等，并用真实截止时间作为结束时间。
 func (e *examSession) tick(now time.Time) {
 	if !e.Submitted && !now.Before(e.Deadline) {
 		e.TimedOut = true
@@ -111,6 +123,8 @@ func (e *examSession) firstMissing() int {
 	}
 	return -1
 }
+
+// submit 判分并锁定考试结果；重要题答错/未答将综合分归零，但保留实际答对题数。
 func (e *examSession) submit(now time.Time) {
 	if e.Submitted {
 		return
@@ -205,6 +219,8 @@ func (a *app) exitExam() {
 		a.examExitOpen = true
 	}
 }
+
+// saveExam 在 UI 线程捕获完整 JSON 快照，再串行落库；只有成功保存后才标记为 Saved。
 func (a *app) saveExam() {
 	e := a.exam
 	if e == nil || !e.Submitted || e.Saved || a.examSaving {
@@ -237,17 +253,21 @@ func (a *app) saveExam() {
 	}
 }
 
+// historyRecord 容纳考试或错题本快照；单条无法解码时保留错误信息而非中断整个历史列表。
 type historyRecord struct {
 	Key      string
 	Exam     *examSession
 	Mistakes []savedMistake
 	Error    string
 }
+
+// savedMistake 同时保存题目和提交，后续题库修改或删除不改变已保存错题本内容。
 type savedMistake struct {
 	Question question
 	Response response
 }
 
+// loadHistory 读取两个独立键空间的快照，并检查考试的并行数组长度后才交给视图。
 func (s *questionStore) loadHistory() ([]historyRecord, error) {
 	rows, err := s.db.Query("SELECT key,value FROM settings WHERE key LIKE 'exam:%' OR key LIKE 'mistake-book:%' ORDER BY key DESC")
 	if err != nil {
@@ -343,6 +363,8 @@ func (a *app) prepareExamPaper() (*examSession, error) {
 	a.paperSettings = a.examForm
 	return e, nil
 }
+
+// snapshotExamPaper 复制后台 PDF 导出需要的可变切片，防止选项顺序随后续操作变化。
 func snapshotExamPaper(e *examSession) *examSession {
 	copy := *e
 	copy.Questions = append([]question(nil), e.Questions...)
@@ -355,6 +377,7 @@ func snapshotExamPaper(e *examSession) *examSession {
 	return &copy
 }
 
+// validateExamSettings 拒绝空题库、非整数、NaN/Inf 和越界数量，避免先转换为整数掩盖错误。
 func validateExamSettings(settings examSettings) error {
 	if settings.Bank == "" {
 		return fmt.Errorf("请选择题库")

@@ -1,3 +1,5 @@
+// 原生 SVG 操作符号，与软件品牌位图分离；统一尺寸由 icon 辅助函数控制。
+
 package main
 
 import "github.com/egoist/mygo/ui"
