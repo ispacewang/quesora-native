@@ -1,3 +1,5 @@
+// 根布局、工具栏、标题栏和快捷键作用域。打开模态窗口时阻止底层速刷快捷键。
+
 package main
 
 import (
@@ -7,6 +9,7 @@ import (
 const titleHeight float32 = 44
 const toolbarHeight float32 = 40.667
 
+// view 在一次原生构建内组装页面和对话框；快捷键只有在对应练习作用域可用时才注册。
 func (a *app) view(c *ui.Context) {
 	c.SetTheme(previewTheme(a.dark))
 	t := c.Theme()

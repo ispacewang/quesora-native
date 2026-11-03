@@ -1,3 +1,5 @@
+// SQLite 一致性快照与发布。读取已提交 WAL，校验完整性后才替换备份，禁止覆盖正在使用的库。
+
 package main
 
 import (
@@ -9,6 +11,7 @@ import (
 	"strings"
 )
 
+// openReadOnlyDatabase 使用转义后的 SQLite file URI 打开只读源，支持含空格、中文和引号的路径。
 func openReadOnlyDatabase(filename string) (*sql.DB, error) {
 	absolute, err := filepath.Abs(filename)
 	if err != nil {
@@ -74,6 +77,7 @@ func snapshotDatabase(db *sql.DB, filename string, replace bool) error {
 	return nil
 }
 
+// backupTo 保护活动数据库及其日志路径/硬链接别名；成功前不会替换已有目标备份。
 func (s *questionStore) backupTo(filename string) error {
 	source, err := filepath.Abs(s.path)
 	if err != nil {

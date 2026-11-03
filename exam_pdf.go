@@ -1,3 +1,5 @@
+// 使用内置中文字体生成原生文本 PDF；不承担通用 LaTeX 或交互几何排版。
+
 package main
 
 import (
@@ -12,6 +14,7 @@ import (
 	"strings"
 )
 
+// writeExamPDF 用固定试卷快照生成 A4 中文文本 PDF，写入临时文件成功后才替换目标。
 func writeExamPDF(filename string, e *examSession, answers bool) error {
 	data, err := nativeAssets.ReadFile("resources/fonts/noto-400.ttf.gz")
 	if err != nil {
@@ -86,6 +89,8 @@ func writeExamPDF(filename string, e *examSession, answers bool) error {
 	}
 	return os.Rename(name, filename)
 }
+
+// exportExamPDF 在启动后台文件选择/生成前固定题序和选项映射，保持试卷、答案与随后考试一致。
 func (a *app) exportExamPDF(answers bool) {
 	if a.paperBusy || a.win == nil {
 		return

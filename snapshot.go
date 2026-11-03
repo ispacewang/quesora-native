@@ -1,3 +1,5 @@
+// 可重复的离屏预览场景，只使用内置示例；不读写用户题库。
+
 package main
 
 import (
@@ -11,6 +13,7 @@ import (
 //go:embed resources/qa-fixtures.json
 var sceneFixtures []byte
 
+// configureScene 只配置内置样例和确定的 UI 状态，供 -snapshot 和回归截图复用。
 func (a *app) configureScene(scene string) {
 	var fixtures map[string]struct {
 		ID                                  int

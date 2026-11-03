@@ -1,3 +1,5 @@
+// 练习记录、重要标记和重置的持久化；考试/已保存错题本快照不由练习重置删除。
+
 package main
 
 import (
@@ -6,6 +8,7 @@ import (
 	"errors"
 )
 
+// loadPractice 先关闭结果集再读取重要标记，避免单连接仓库被未释放游标阻塞。
 func (s *questionStore) loadPractice() (map[string]response, map[string]bool, error) {
 	answers := map[string]response{}
 	stars := map[string]bool{}
@@ -41,6 +44,8 @@ func (s *questionStore) loadPractice() (map[string]response, map[string]bool, er
 	}
 	return answers, stars, nil
 }
+
+// saveResponse 按题目主键覆盖最近一次提交，不追加重复统计记录。
 func (s *questionStore) saveResponse(id string, r response) error {
 	payload, err := json.Marshal(r)
 	if err != nil {
@@ -77,6 +82,8 @@ func (a *app) toggleStar(id string) {
 		}
 	})
 }
+
+// resetPractice 只清空日常练习；题库、重要标记和保存的考试/错题本不受影响。
 func (a *app) resetPractice() {
 	a.savedWrong = false
 	a.exportOpen = false

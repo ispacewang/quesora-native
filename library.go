@@ -1,3 +1,5 @@
+// 文件选择、导入和删除的异步编排。数据库任务串行执行，结果经 publish 返回 UI 线程。
+
 package main
 
 import (
@@ -13,6 +15,7 @@ type libraryJobs struct {
 	done  sync.WaitGroup
 }
 
+// newLibraryJobs 创建有界串行队列，保持导入、答题、重置和删除的提交顺序。
 func newLibraryJobs() *libraryJobs {
 	j := &libraryJobs{queue: make(chan func(), 128)}
 	j.done.Add(1)
@@ -24,7 +27,11 @@ func newLibraryJobs() *libraryJobs {
 	}()
 	return j
 }
+
+// close 只由生命周期所有者调用一次；停止接收任务后等待已入队操作完成。
 func (j *libraryJobs) close() { close(j.queue); j.done.Wait() }
+
+// enqueue 在 UI 线程非阻塞入队；队列满时返回 false，调用方须解除自己的忙碌状态。
 func (a *app) enqueue(work func()) bool {
 	if a.jobs == nil || a.closed {
 		return false
@@ -37,6 +44,8 @@ func (a *app) enqueue(work func()) bool {
 		return false
 	}
 }
+
+// publish 将后台结果交给窗口调度器；窗口已关闭时丢弃模型更新。
 func (a *app) publish(fn func()) {
 	a.dispatch(func() {
 		if !a.closed {
@@ -76,6 +85,8 @@ func (a *app) pickQuestionFile() {
 		})
 	}()
 }
+
+// startImport 先解析后事务保存，成功后才加载新题库并发布到界面；每次只处理一个文件。
 func (a *app) startImport(paths []string) {
 	if a.importBusy {
 		return
@@ -114,6 +125,8 @@ func (a *app) startImport(paths []string) {
 		a.importMessage = "后台任务队列繁忙，请稍后重试。"
 	}
 }
+
+// finishImport 只在 UI 线程接收解析结果，重置失效筛选并选中新导入题库。
 func (a *app) finishImport(result importResult, qs []question, err error) {
 	a.importBusy = false
 	a.importWarnings = result.Warnings
@@ -211,6 +224,8 @@ func (a *app) deleteSelectedBank() {
 		a.importBusy = false
 	}
 }
+
+// syncStars 用导入的重要标记初始化尚无用户选择的题目，保留用户已明确设置的值。
 func (a *app) syncStars() {
 	for _, q := range a.questions {
 		if _, exists := a.starred[q.ID]; !exists {

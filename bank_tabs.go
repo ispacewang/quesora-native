@@ -1,3 +1,5 @@
+// 固定高度的题库选择栏。横向滚轮和全部题库菜单处理溢出，上传入口保持独立可见。
+
 package main
 
 import (
@@ -5,6 +7,7 @@ import (
 	"github.com/egoist/mygo/ui"
 )
 
+// selectBank 切换题库并重置已失效的题型/错题筛选，随后开始新题序。
 func (a *app) selectBank(name string) {
 	a.savedWrong = false
 	a.exportOpen = false

@@ -1,3 +1,5 @@
+// 根据 ZIP/OLE 文件签名选取 Excel 读取器，避免扩展名不符时误用旧 XLS 解码器。
+
 package main
 
 import (

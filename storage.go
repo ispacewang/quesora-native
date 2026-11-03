@@ -1,3 +1,5 @@
+// SQLite 题库仓储。表结构集中在打开流程，批量导入使用单个事务，删除依赖外键级联。
+
 package main
 
 import (
@@ -11,11 +13,14 @@ import (
 	"strings"
 )
 
+// questionStore 封装单库连接和实际路径；关闭前须先等待串行任务队列排空。
 type questionStore struct {
 	db   *sql.DB
 	path string
 }
 
+// openQuestionStore 创建/打开原生数据库并初始化兼容表结构。
+// 仅使用一个连接，使 foreign_keys 等连接级设置对所有后续操作一致生效。
 func openQuestionStore(filename string) (*questionStore, error) {
 	if err := os.MkdirAll(filepath.Dir(filename), 0700); err != nil {
 		return nil, err
@@ -37,6 +42,8 @@ func openQuestionStore(filename string) (*questionStore, error) {
 	return &questionStore{db, filename}, nil
 }
 func (s *questionStore) close() error { return s.db.Close() }
+
+// importBanks 将所有有效工作表作为一个原子批次保存；同名题库或任一写入失败会整批回滚。
 func (s *questionStore) importBanks(batch importResult) error {
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -89,6 +96,8 @@ func (s *questionStore) importBanks(batch importResult) error {
 	}
 	return tx.Commit()
 }
+
+// load 按题库/题目主键恢复稳定顺序；损坏 JSON 明确报错，避免用空值掩盖数据问题。
 func (s *questionStore) load() ([]question, error) {
 	rows, err := s.db.Query("SELECT q.id,b.name,q.type,q.question,q.options,q.answer,q.explanation,q.meta FROM questions q JOIN banks b ON b.id=q.bank_id ORDER BY b.id,q.id")
 	if err != nil {
@@ -123,6 +132,8 @@ func (s *questionStore) load() ([]question, error) {
 	}
 	return questions, rows.Err()
 }
+
+// deleteBank 只删除库内题目及外键关联练习记录，不触碰导入的原始文件。
 func (s *questionStore) deleteBank(name string) error {
 	_, err := s.db.Exec("DELETE FROM banks WHERE name=?", name)
 	return err

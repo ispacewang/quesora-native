@@ -1,3 +1,5 @@
+// 离线文本归一化与简答要点覆盖评分。该启发式规则不等同于语义理解或 AI 判题。
+
 package main
 
 import (
@@ -21,6 +23,7 @@ var stopWords = func() map[string]bool {
 	return m
 }()
 
+// normalizeAnswer 应用 NFKC、大小写和常见空白/标点归一化，不用于保存或展示原始答案。
 func normalizeAnswer(s string) string {
 	return strings.Map(func(r rune) rune {
 		if unicode.IsSpace(r) || strings.ContainsRune("，,、；;。.!！?？:：\"“”‘’'`（）()【】[]{}<>《》", r) {
@@ -29,6 +32,8 @@ func normalizeAnswer(s string) string {
 		return unicode.ToLower(r)
 	}, norm.NFKC.String(s))
 }
+
+// extractTerms 优先使用系统 ICU，缺失时回退正则；去除短词、停用词和重复词。
 func extractTerms(s string) []string {
 	parts := nativeWords(norm.NFKC.String(s))
 	if parts == nil {
@@ -45,6 +50,8 @@ func extractTerms(s string) []string {
 	}
 	return out
 }
+
+// coversTerms 要求覆盖至少两个且不少于六成的去重词项，避免单个泛词造成误判。
 func coversTerms(user string, terms []string) bool {
 	count := 0
 	for _, term := range terms {
@@ -54,6 +61,8 @@ func coversTerms(user string, terms []string) bool {
 	}
 	return count >= max(2, int(math.Ceil(float64(len(terms))*.6)))
 }
+
+// judgeShortAnswer 先匹配完整规范答案，再按要点或词项覆盖判定；规则存在语义与系统分词差异的边界。
 func judgeShortAnswer(user, standard string) bool {
 	standard = strings.TrimSpace(answerPrefix.ReplaceAllString(norm.NFKC.String(standard), ""))
 	u, s := normalizeAnswer(user), normalizeAnswer(standard)

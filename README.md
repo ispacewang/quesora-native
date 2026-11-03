@@ -77,3 +77,5 @@ git push origin v0.1.0-preview.4
 核心源码在根目录；`resources/` 包含图标、字体与公开示例题，`testdata/` 包含 XLS 测试样本，`third_party/xls/` 是保留来源与修改说明的兼容副本，`qa/` 是发布检查工具。数据库、个人题库、构建产物、缓存、IDE 配置和备份不提交到仓库。
 
 项目沿用原 Quesora 仓库的 [Apache-2.0 许可证](LICENSE)。第三方组件和字体使用各自许可证，见 [NOTICE](NOTICE)、`third_party/` 和 `resources/fonts/`；发布 ZIP 附带依赖许可证。
+
+维护者可从 [开发导览](docs/development.md) 和根包 doc.go 了解模块职责、线程边界、解析扩展、数据保护及验证流程。

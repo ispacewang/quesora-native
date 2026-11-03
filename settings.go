@@ -1,3 +1,5 @@
+// 设置和数据操作视图；原生文件对话框与磁盘 I/O 在后台运行，状态仅通过 publish 回写。
+
 package main
 
 import (
@@ -13,6 +15,7 @@ func (a *app) openSettings() {
 	}
 }
 
+// backupData 在文件选择后排队保存当前设置和数据快照，使已入队答案先于备份提交。
 func (a *app) backupData() {
 	if a.backupBusy || a.store == nil || a.pickBackup == nil {
 		return
@@ -87,6 +90,7 @@ func settingRow(c *ui.Context, label, description string, active bool, toggle fu
 	})
 }
 
+// settingsDialog 固定底部关闭操作，正文独立滚动，使最小窗口仍可到达全部数据操作。
 func (a *app) settingsDialog(c *ui.Context) {
 	t := c.Theme()
 	_, height := c.Size()

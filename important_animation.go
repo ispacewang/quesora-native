@@ -1,3 +1,5 @@
+// 重要题标识的进入/退出动画。保存时间和阶段，不保存跨帧失效的 ui.Element。
+
 package main
 
 import (
@@ -11,6 +13,7 @@ import (
 
 var importantSprite, importantSpriteDark, importantShield, importantShieldDark *ui.Bitmap
 
+// importantMotion 仅持有题目 ID、阶段和时钟起点，使动画可跨重建而不持有过期 UI 元素。
 type importantMotion struct {
 	ID    string
 	Phase int
@@ -59,6 +62,8 @@ func cubicEase(x, x1, y1, x2, y2 float64) float32 {
 	t := (lo + hi) / 2
 	return float32(3*(1-t)*(1-t)*t*y1 + 3*(1-t)*t*t*y2 + t*t*t)
 }
+
+// importantFrame 返回纯时间函数的旋转/透明度以及是否仍需动画帧；结束后不持续刷新。
 func importantFrame(elapsed time.Duration, exit bool) (angle, opacity float32, active bool) {
 	duration := 750 * time.Millisecond
 	if exit {

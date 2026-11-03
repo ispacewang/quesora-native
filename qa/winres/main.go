@@ -11,6 +11,8 @@ func must(err error) {
 		panic(err)
 	}
 }
+
+// main 接收源 PNG、目标 syso 和可选 ICO 路径；一次生成 EXE 与安装器共用的多尺寸图标和 DPI 清单。
 func main() {
 	f, err := os.Open(os.Args[1])
 	must(err)

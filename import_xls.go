@@ -1,3 +1,5 @@
+// 旧 OLE/BIFF XLS 的兼容适配层。输出通用 worksheet，后续与 XLSX/CSV 共用归一化流程。
+
 package main
 
 import (
