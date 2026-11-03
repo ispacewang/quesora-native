@@ -99,13 +99,22 @@ func (a *app) restoreDialog(c *ui.Context) {
 	if a.restoreBusy {
 		a.restoreOpen = true
 	}
+	_, height := c.Size()
 	nativeModal(c.Key("restore-confirmation"), &a.restoreOpen, func() {
 		ui.Text(c, "从备份恢复全部数据").FontSize(18).FontWeight(600)
-		ui.Text(c, "将替换当前全部题库、答题记录、已保存考试/错题本和学习设置。恢复前会自动保存当前数据的安全备份。").FillWidth().FontSize(13).LineHeight(1.5)
-		ui.Text(c, a.restorePath).FillWidth().FontSize(11).TextColor(c.Theme().TextMuted).Selectable()
-		if a.restoreBusy || a.backupError {
-			ui.Text(c, a.backupMessage).FillWidth().FontSize(12).LineHeight(1.5).TextColor(c.Theme().TextMuted)
-		}
+		ui.Scroll(c.Key("restore-confirm-body")).FillWidth().MaxHeight(max(100, height-200)).Children(func() {
+			ui.Column(c).FillWidth().Gap(12).Children(func() {
+				ui.Text(c, "将替换当前全部题库、答题记录、已保存考试/错题本和学习设置。恢复前会自动保存当前数据的安全备份。").FillWidth().FontSize(13).LineHeight(1.5)
+				ui.Text(c, a.restorePath).FillWidth().FontSize(11).TextColor(c.Theme().TextMuted).Selectable()
+				if a.restoreBusy || a.backupError {
+					color := c.Theme().TextMuted
+					if a.backupError {
+						color = c.Theme().Danger
+					}
+					ui.Text(c, a.backupMessage).FillWidth().FontSize(12).LineHeight(1.5).TextColor(color)
+				}
+			})
+		})
 		ui.Row(c).FillWidth().Justify(ui.End).Gap(8).Children(func() {
 			control(c, "cancel-restore", "取消", nil, outlineButton, func() { a.restoreOpen = false }).Disabled(a.restoreBusy)
 			label := "确认恢复"

@@ -20,7 +20,7 @@ func (a *app) view(c *ui.Context) {
 		bg = ui.Transparent
 	}
 	c.Root().Background(bg)
-	ui.Column(c.Key("app-shell")).Fill().Background(bg).Disabled(a.restoreBusy).Children(func() {
+	ui.Column(c.Key("app-shell")).Fill().Background(bg).Disabled(a.restoreBusy || a.updates.installing).Children(func() {
 		a.titlebar(c)
 		ui.Row(c.Key("toolbar")).Background(chromeBackground(c)).FillWidth().Height(toolbarHeight).Shrink(0).Padding(6, 16).BorderWidth(0, 0, 1, 0).BorderColor(t.Border.Alpha(.5)).AlignItems(ui.Center).Children(func() {
 			control(c, "help", "", helpIcon, ghostButton, func() { a.helpOpen = true }).Label("功能引导").TextColor(t.Text).Size(28, 28).Padding(0).Tooltip("功能引导")
@@ -55,11 +55,12 @@ func (a *app) view(c *ui.Context) {
 	a.libraryDialogs(c)
 	a.settingsDialog(c)
 	a.restoreDialog(c)
+	a.updateInstallDialog(c)
 	if a.libraryStatus != "" && a.libraryStatus != "题库与答题记录自动保存" && a.libraryStatus != a.toastLast {
 		a.toastLast = a.libraryStatus
 		c.Toast(a.libraryStatus)
 	}
-	if a.exam == nil && !a.examSetupOpen && !a.historyOpen && !a.settingsOpen && !a.restoreOpen && !a.restoreBusy && a.quick && !a.answerHandle.FocusWithin(c) && !a.importOpen && !a.deleteOpen && !a.helpOpen && !a.resetPracticeOpen && !a.finishOpen {
+	if a.exam == nil && !a.examSetupOpen && !a.historyOpen && !a.settingsOpen && !a.restoreOpen && !a.restoreBusy && !a.updates.confirmOpen && !a.updates.installing && a.quick && !a.answerHandle.FocusWithin(c) && !a.importOpen && !a.deleteOpen && !a.helpOpen && !a.resetPracticeOpen && !a.finishOpen {
 		for i, key := range []ui.Key{ui.KeyA, ui.KeyB, ui.KeyC, ui.KeyD} {
 			c.OnShortcut(0, key, func() {
 				if q, ok := a.current(); ok {

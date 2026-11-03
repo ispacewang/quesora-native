@@ -78,7 +78,7 @@ Name: "{autodesktop}\Quesora Native"; Filename: "{app}\QuesoraNativePreview.exe"
 Root: HKCU; Subkey: "Software\QuesoraNative"; ValueType: string; ValueName: "InstallerVersion"; ValueData: "{#NumericVersion}"; Flags: uninsdeletevalue uninsdeletekeyifempty
 
 [Run]
-Filename: "{app}\QuesoraNativePreview.exe"; Description: "启动 Quesora Native"; Flags: nowait postinstall skipifsilent unchecked
+Filename: "{app}\QuesoraNativePreview.exe"; Description: "启动 Quesora Native"; Flags: nowait postinstall skipifsilent
 
 [Code]
 var IsUpgrade: Boolean;

@@ -108,6 +108,8 @@ func (a *app) settingsDialog(c *ui.Context) {
 				settingRow(c, "速刷", "提交答案后自动进入下一题。", a.quick, a.toggleQuick)
 				settingRow(c, "打乱选项", "随机调整选择题的选项顺序。", a.shuffle, a.toggleShuffle)
 				line(c)
+				a.updateSection(c)
+				line(c)
 				ui.Text(c, "数据与备份").FontSize(11).FontWeight(600).TextColor(t.TextMuted)
 				ui.Text(c, "题库、答题记录、已保存的考试和学习设置会一起备份。").FillWidth().FontSize(12).LineHeight(1.6)
 				if a.store != nil {
@@ -137,5 +139,5 @@ func (a *app) settingsDialog(c *ui.Context) {
 		ui.Row(c).FillWidth().Padding(16, 24).BorderWidth(1, 0, 0, 0).BorderColor(t.Border).Justify(ui.End).Children(func() {
 			control(c, "close", "完成", nil, outlineButton, func() { a.settingsOpen = false }).Label("关闭设置").Height(32)
 		})
-	}).Width(520).Padding(0).Gap(0).Disabled(a.restoreBusy)
+	}).Width(520).Padding(0).Gap(0).Disabled(a.restoreBusy || a.updates.installing)
 }

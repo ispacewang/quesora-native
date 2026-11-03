@@ -5,5 +5,11 @@
   "generated_on": "2026-11-03",
   "master": "icon-source.png",
   "runtime": "app-icon.png",
-  "windows": "icon.png"
+  "windows": "icon.png",
+  "export": {
+    "command": "go run ./qa/icons resources/icon-source.png resources/icon.png resources/app-icon.png",
+    "cropInset": 0.085,
+    "padding": 0.045,
+    "cornerRadius": 0.2
+  }
 }
