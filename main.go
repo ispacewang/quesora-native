@@ -106,11 +106,23 @@ func main() {
 		a.pickBackup = func() (string, error) {
 			return mygo.Dialog.Save(mygo.SaveDialogOptions{Parent: a.win, Title: "备份全部题库与记录", DefaultPath: "Quesora备份-" + time.Now().Format("20060102-150405") + ".db", Filters: []mygo.FileFilter{{Name: "Quesora 数据备份", Extensions: []string{"db"}}}})
 		}
+		a.pickRestore = func() (string, error) {
+			paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{Parent: a.win, Title: "选择原生数据库备份", Filters: []mygo.FileFilter{{Name: "Quesora 数据备份", Extensions: []string{"db"}}}})
+			if err != nil || len(paths) == 0 {
+				return "", err
+			}
+			return paths[0], nil
+		}
 		a.showDataFolder = func() error { return mygo.Shell.OpenPath(filepath.Dir(a.store.path)) }
 		a.pickFile = func() ([]string, error) {
 			return mygo.Dialog.Open(mygo.OpenDialogOptions{Parent: a.win, Title: "上传题库", Filters: []mygo.FileFilter{{Name: "题库文件", Extensions: []string{"xlsx", "xls", "csv"}}}})
 		}
-		a.win.OnClosed(func() { a.persistPreferences(); a.closed = true })
+		a.win.OnClosed(func() {
+			if !a.restoreBusy {
+				a.persistPreferences()
+			}
+			a.closed = true
+		})
 		a.win.OnFileDrop(func(e *mygo.FileDropEvent) {
 			paths := append([]string(nil), e.Paths...)
 			a.win.Update(func() {

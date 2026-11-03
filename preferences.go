@@ -37,7 +37,7 @@ func (a *app) preferences() learningPreferences {
 
 // persistPreferences 仅将捕获的不可变 JSON 入队；相同快照去重，写入失败允许后续重试。
 func (a *app) persistPreferences() {
-	if a.store == nil || a.jobs == nil || a.closed {
+	if a.store == nil || a.jobs == nil || a.closed || a.restoreBusy {
 		return
 	}
 	data, err := json.Marshal(a.preferences())

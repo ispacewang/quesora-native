@@ -31,6 +31,9 @@ type response struct {
 // app 持有窗口生命周期内的模型、控件状态和稳定句柄。
 // 生产环境的字段变更在 UI 线程进行；后台任务只能经 publish 发布结果。
 type app struct {
+	restoreOpen, restoreBusy, restorePicking                       bool
+	restorePath                                                    string
+	pickRestore                                                    func() (string, error)
 	settingsOpen, backupBusy, backupError                          bool
 	backupMessage, lastPreferences                                 string
 	pickBackup                                                     func() (string, error)

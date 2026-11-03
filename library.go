@@ -88,7 +88,7 @@ func (a *app) pickQuestionFile() {
 
 // startImport 先解析后事务保存，成功后才加载新题库并发布到界面；每次只处理一个文件。
 func (a *app) startImport(paths []string) {
-	if a.importBusy {
+	if a.importBusy || a.restoreBusy {
 		return
 	}
 	a.importOpen = true

@@ -17,7 +17,7 @@ func (a *app) openSettings() {
 
 // backupData 在文件选择后排队保存当前设置和数据快照，使已入队答案先于备份提交。
 func (a *app) backupData() {
-	if a.backupBusy || a.store == nil || a.pickBackup == nil {
+	if a.backupBusy || a.store == nil || a.pickBackup == nil || a.restoreBusy {
 		return
 	}
 	a.backupBusy, a.backupError = true, false
@@ -121,7 +121,8 @@ func (a *app) settingsDialog(c *ui.Context) {
 					if a.backupBusy {
 						text = "正在备份…"
 					}
-					control(c, "backup", text, downloadIcon, primaryButton, a.backupData).Label("备份全部数据").Disabled(a.store == nil || a.backupBusy || a.importBusy)
+					control(c, "backup", text, downloadIcon, primaryButton, a.backupData).Label("备份全部数据").Disabled(a.store == nil || a.backupBusy || a.importBusy || a.restoreBusy)
+					control(c, "restore", "从备份恢复…", historyIcon, outlineButton, a.chooseRestoreBackup).Label("从备份恢复").Disabled(a.store == nil || a.restoreBusy || a.restorePicking || a.backupBusy || a.importBusy || a.exam != nil)
 				})
 				if a.backupMessage != "" {
 					color := t.TextMuted
@@ -136,5 +137,5 @@ func (a *app) settingsDialog(c *ui.Context) {
 		ui.Row(c).FillWidth().Padding(16, 24).BorderWidth(1, 0, 0, 0).BorderColor(t.Border).Justify(ui.End).Children(func() {
 			control(c, "close", "完成", nil, outlineButton, func() { a.settingsOpen = false }).Label("关闭设置").Height(32)
 		})
-	}).Width(520).Padding(0).Gap(0)
+	}).Width(520).Padding(0).Gap(0).Disabled(a.restoreBusy)
 }
