@@ -1,5 +1,5 @@
 {
-  "description": "橙色渐变圆角矩形应用图标，白色 A/B/C/D 题卡与 Q 气泡，四角透明。",
+  "description": "橙色圆角矩形；16–96px 使用高对比白色 Q，128/256px 保留完整题卡与气泡。",
   "source": "User-supplied reference, adapted with built-in imagegen",
   "prompt": "以用户参考图为基础，保留橙色渐变、白色问卷与 Q 气泡；改为圆角矩形应用图标、透明四角、清晰数字图形轮廓，适配 Windows 16–256 像素。",
   "generated_on": "2026-11-03",
@@ -7,9 +7,26 @@
   "runtime": "app-icon.png",
   "windows": "icon.png",
   "export": {
-    "command": "go run ./qa/icons resources/icon-source.png resources/icon.png resources/app-icon.png",
+    "command": "go run ./qa/icons resources/icon-source.png resources/icon.png resources/app-icon.png resources/icon-frames",
     "cropInset": 0.085,
     "padding": 0.045,
-    "cornerRadius": 0.2
+    "cornerRadius": 0.2,
+    "frames": [
+      16,
+      20,
+      24,
+      32,
+      40,
+      48,
+      60,
+      64,
+      72,
+      96,
+      128,
+      256
+    ],
+    "small": "Geometric Q, 8x supersampling at target size; no intermediate bitmap resize",
+    "runtime": "Geometric Q at 128px for native titlebar",
+    "packaging": "Embed prepared PNG frames directly with NewIconFromImages"
   }
 }

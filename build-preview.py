@@ -58,8 +58,8 @@ def build(stage, distribution, version, env, installer=False, iscc=None):
         shutil.copy2(ROOT / name, stage / name)
     for name in ("testdata", "third_party", "resources"):
         shutil.copytree(ROOT / name, stage / name)
-    # Export the reviewed master through the same deterministic Windows/runtime icon mask.
-    run(["go", "run", "./qa/icons", stage / "resources/icon-source.png", stage / "resources/icon.png", stage / "resources/app-icon.png"], ROOT, env)
+    # Render every optical size directly; resource packaging must not resize these frames.
+    run(["go", "run", "./qa/icons", stage / "resources/icon-source.png", stage / "resources/icon.png", stage / "resources/app-icon.png", stage / "resources/icon-frames"], ROOT, env)
     gofiles = sorted(stage.glob("*.go"))
     unformatted = run(["gofmt", "-l", *gofiles], stage, env, capture=True).stdout.strip()
     if unformatted:
@@ -71,13 +71,13 @@ def build(stage, distribution, version, env, installer=False, iscc=None):
     resource_module = ROOT / "qa" / "winres"
     run(["go", "mod", "download"], resource_module, env)
     run(["go", "mod", "verify"], resource_module, env)
-    run(["go", "run", ".", ROOT / "resources" / "icon.png", stage / "quesora_windows_amd64.syso", stage / "quesora.ico"], resource_module, env)
+    run(["go", "run", ".", stage / "resources/icon-frames", stage / "quesora_windows_amd64.syso", stage / "quesora.ico"], resource_module, env)
     out = ROOT / "build"
     out.mkdir(exist_ok=True)
     executable = out / "QuesoraNativePreview.exe"
     flags = "-s -w -H=windowsgui -X main.appVersion=" + version
     run(["go", "build", "-trimpath", "-ldflags", flags, "-o", executable, "."], stage, env)
-    run([sys.executable, ROOT / "qa" / "verify_executable.py", executable], ROOT, env)
+    run([sys.executable, ROOT / "qa" / "verify_executable.py", executable, stage / "resources/icon-frames"], ROOT, env)
     scenes = [("light", []), ("dark", ["-dark"]), ("upload", ["-show-upload"]),
               ("exam-setup-dark", ["-scene", "exam-setup", "-dark"]),
               ("many-banks-dark", ["-scene", "many-banks", "-dark"]),

@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"github.com/tc-hib/winres"
+	"image"
 	"image/png"
 	"os"
+	"path/filepath"
 )
 
 func must(err error) {
@@ -12,14 +15,25 @@ func must(err error) {
 	}
 }
 
-// main 接收源 PNG、目标 syso 和可选 ICO 路径；一次生成 EXE 与安装器共用的多尺寸图标和 DPI 清单。
+// main 接收已按实际尺寸绘制的帧目录、目标 syso 和可选 ICO 路径。
+// 不在资源打包阶段缩放；EXE 和安装器必须共用同一组光学尺寸图稿。
 func main() {
-	f, err := os.Open(os.Args[1])
-	must(err)
-	img, err := png.Decode(f)
-	f.Close()
-	must(err)
-	icon, err := winres.NewIconFromResizedImage(img, []int{16, 24, 32, 48, 64, 128, 256})
+	if len(os.Args) < 3 || len(os.Args) > 4 {
+		panic("usage: winres frames-directory output.syso [output.ico]")
+	}
+	var frames []image.Image
+	for _, size := range []int{16, 20, 24, 32, 40, 48, 60, 64, 72, 96, 128, 256} {
+		f, err := os.Open(filepath.Join(os.Args[1], fmt.Sprintf("icon-%d.png", size)))
+		must(err)
+		img, err := png.Decode(f)
+		f.Close()
+		must(err)
+		if img.Bounds().Dx() != size || img.Bounds().Dy() != size {
+			panic("unexpected icon frame dimensions")
+		}
+		frames = append(frames, img)
+	}
+	icon, err := winres.NewIconFromImages(frames)
 	must(err)
 	rs := winres.ResourceSet{}
 	must(rs.SetIcon(winres.ID(1), icon))

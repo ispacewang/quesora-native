@@ -36,7 +36,17 @@ types=directory(0)
 assert all(kind in types for kind in [3,14,24]),'missing icon/group/manifest resources'
 group=leaf(types[14]);count=struct.unpack_from('<H',group,4)[0]
 sizes=[group[6+i*14] or 256 for i in range(count)]
-assert set([16,24,32,48,64,128,256]).issubset(sizes),sizes
+assert set([16,20,24,32,40,48,60,64,72,96,128,256])==set(sizes),sizes
+# Byte-for-byte equality guards against accidentally restoring a second resize pass.
+if len(sys.argv)>2:
+ frames=pathlib.Path(sys.argv[2])
+ icons=directory(types[3]&0x7fffffff)
+ for i,size in enumerate(sizes):
+  entry=6+i*14
+  assert (group[entry+1] or 256)==size,'icon frame must be square'
+  ident=struct.unpack_from('<H',group,entry+12)[0]
+  payload=leaf(icons[ident])
+  assert payload==(frames/('icon-'+str(size)+'.png')).read_bytes(), 'PE icon differs from prepared frame: '+str(size)
 manifest=leaf(types[24])
 xml=ET.fromstring(manifest)
 awareness=xml.find('.//{http://schemas.microsoft.com/SMI/2016/WindowsSettings}dpiAwareness')
