@@ -58,7 +58,7 @@ def build(stage, distribution, version, env, installer=False, iscc=None):
         shutil.copy2(ROOT / name, stage / name)
     for name in ("testdata", "third_party", "resources"):
         shutil.copytree(ROOT / name, stage / name)
-    # Render every optical size directly; resource packaging must not resize these frames.
+    # Resize the complete artwork directly for every DPI size; resource packaging must not resize these frames.
     run(["go", "run", "./qa/icons", stage / "resources/icon-source.png", stage / "resources/icon.png", stage / "resources/app-icon.png", stage / "resources/icon-frames"], ROOT, env)
     gofiles = sorted(stage.glob("*.go"))
     unformatted = run(["gofmt", "-l", *gofiles], stage, env, capture=True).stdout.strip()

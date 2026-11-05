@@ -48,4 +48,4 @@ UI 回归使用 ui.NewTester 覆盖焦点、按键、重复帧和最小窗口；
 
 更新在 update.go/update_download.go/update_ui.go/update_runtime.go：公开元数据只决定候选，固定仓库/产物名/HTTPS 重定向名单和 SHA-256 均通过才允许安装；测试注入下载/进程替身。实际安装在用户确认后交给可见安装器，不在自动化测试中启动真实安装。版本、来源 URL、取消、限流和缓存被修改均需回归。
 
-resources/icon-design.json 记录图标导出参数。qa/icons 从母版直接生成 128/256px 完整题卡，并在目标尺寸绘制 16–96px 简化 Q；标题栏使用同一简化图稿。执行 JSON 中的 export.command 同时重建 icon.png、app-icon.png 和 icon-frames/，不要手动缩小已有 PNG。build-preview.py 在隔离目录重新生成全部帧，qa/winres 使用 NewIconFromImages 直接嵌入，不进行二次缩放；qa/verify_executable.py 对实际 PE 帧与导出 PNG 逐字节比较。
+resources/icon-design.json 记录图标导出参数。qa/icons 使用用户提供的高分辨率原图，所有尺寸和标题栏均保留完整题卡、A/B/C/D、Q 气泡、颜色和布局，只等比缩放并裁切外部圆角，不重绘或按尺寸更换标志。执行 JSON 中的 export.command 同时重建 icon.png、app-icon.png 和 icon-frames/，不要手动缩小已有 PNG。build-preview.py 在隔离目录重新生成全部帧，qa/winres 使用 NewIconFromImages 直接嵌入，不进行二次缩放；qa/verify_executable.py 对实际 PE 帧与导出 PNG 逐字节比较。
