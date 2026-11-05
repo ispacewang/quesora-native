@@ -2,6 +2,7 @@
 
 [![Windows CI](https://github.com/ispacewang/quesora-native/actions/workflows/windows.yml/badge.svg)](https://github.com/ispacewang/quesora-native/actions/workflows/windows.yml)
 [![Release](https://img.shields.io/github/v/release/ispacewang/quesora-native?include_prereleases)](https://github.com/ispacewang/quesora-native/releases)
+[![Listed on Awesome MyGo](https://awesomemygo.dev/badge.svg)](https://awesomemygo.dev/apps/quesora-native)
 ![Windows x64](https://img.shields.io/badge/platform-Windows%20x64-4a7dbf)
 [![Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-4a7dbf)](LICENSE)
 
