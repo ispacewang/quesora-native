@@ -53,9 +53,9 @@ ConvertTo-Json -InputObject $rows -Compress
     for link in json.loads(result.stdout):
         filename, index = link["icon"].rsplit(",", 1)
         if pathlib.Path(link["target"]).resolve() != (installed / "QuesoraNativePreview.exe").resolve():
-            raise AssertionError("Shortcut targets a stale executable")
+            raise AssertionError("Shortcut target mismatch: actual=" + repr(link["target"]) + ", expected=" + str(installed / "QuesoraNativePreview.exe"))
         if pathlib.Path(filename.strip('"')).resolve() != expected_icon.resolve() or index.strip() != "0":
-            raise AssertionError("Shortcut still uses a cached EXE/old icon path")
+            raise AssertionError("Shortcut icon mismatch: actual=" + repr(link["icon"]) + ", expected=" + str(expected_icon))
 
 
 def main():
