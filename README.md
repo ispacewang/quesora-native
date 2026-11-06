@@ -6,7 +6,9 @@
 ![Windows x64](https://img.shields.io/badge/platform-Windows%20x64-4a7dbf)
 [![Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-4a7dbf)](LICENSE)
 
-Quesora 的 Go + [MyGo](https://github.com/egoist/mygo) 原生 Windows 刷题应用。
+Quesora 的 Go + [MyGo](https://github.com/egoist/mygo) 原生 Windows 刷题应用，由 [原 Quesora（Electron 版）](https://github.com/ispacewang/quesora) 迁移而来。支持 Excel 题库导入、多题库练习、错题整理和计时考试，采用原生界面与本地数据存储。
+
+可配置多家 AI 服务商，根据主题或参考资料生成题库，并提供主观题 AI 判题功能（Beta）。生成题目可先预览，确认后再保存入库。
 
 ![主界面](docs/images/preview-light.png)
 
