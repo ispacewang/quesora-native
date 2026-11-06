@@ -33,30 +33,74 @@ def digest(filename):
 
 
 
+
+def read_shell_link(filename):
+    """Read Unicode Shell-link fields without WScript.Shell's ANSI path conversion."""
+    import ctypes
+    import uuid
+    from ctypes import wintypes
+
+    class GUID(ctypes.Structure):
+        _fields_ = [("data", ctypes.c_ubyte * 16)]
+
+    def guid(text):
+        return GUID.from_buffer_copy(uuid.UUID(text).bytes_le)
+
+    def invoke(pointer, index, argtypes, *args):
+        table = ctypes.cast(pointer, ctypes.POINTER(ctypes.POINTER(ctypes.c_void_p))).contents
+        method = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p, *argtypes)(table[index])
+        hr = method(pointer, *args)
+        if hr < 0:
+            raise OSError("Shell-link read failed: HRESULT 0x%08x" % (hr & 0xffffffff))
+
+    ole = ctypes.OleDLL("ole32")
+    ole.CoInitializeEx(None, 2)
+    link, persist = ctypes.c_void_p(), ctypes.c_void_p()
+    try:
+        clsid = guid("00021401-0000-0000-c000-000000000046")
+        iid = guid("000214f9-0000-0000-c000-000000000046")  # IShellLinkW
+        ole.CoCreateInstance(ctypes.byref(clsid), None, 1, ctypes.byref(iid), ctypes.byref(link))
+        persist_iid = guid("0000010b-0000-0000-c000-000000000046")
+        invoke(link, 0, [ctypes.c_void_p, ctypes.c_void_p], ctypes.byref(persist_iid), ctypes.byref(persist))
+        invoke(persist, 5, [wintypes.LPCWSTR, wintypes.DWORD], str(filename), 0)
+        target, icon = ctypes.create_unicode_buffer(32768), ctypes.create_unicode_buffer(32768)
+        index = ctypes.c_int()
+        invoke(link, 3, [wintypes.LPWSTR, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD], target, len(target), None, 4)
+        invoke(link, 16, [wintypes.LPWSTR, ctypes.c_int, ctypes.POINTER(ctypes.c_int)], icon, len(icon), ctypes.byref(index))
+        return {"target": target.value, "icon": icon.value + "," + str(index.value)}
+    finally:
+        for pointer in (persist, link):
+            if pointer.value:
+                table = ctypes.cast(pointer, ctypes.POINTER(ctypes.POINTER(ctypes.c_void_p))).contents
+                ctypes.WINFUNCTYPE(ctypes.c_ulong, ctypes.c_void_p)(table[2])(pointer)
+        ole.CoUninitialize()
+
+
+def shell_folder(identifier):
+    """Respect redirected Desktop/Programs folders instead of assuming USERPROFILE paths."""
+    import ctypes
+    folder = ctypes.create_unicode_buffer(260)
+    result = ctypes.WinDLL("shell32").SHGetFolderPathW(None, identifier, None, 0, folder)
+    if result != 0:
+        raise OSError("Could not locate CI shortcut folder")
+    return pathlib.Path(folder.value)
+
+
 def verify_shortcut_icons(installed, version, icon):
-    """Read real installed Shell links; never launch their targets or use a personal profile."""
-    # PowerShell is restricted to the ephemeral runner by main() before this is called.
-    script = """[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
-$shell = New-Object -ComObject WScript.Shell
-$rows = @()
-foreach ($folder in @('Desktop', 'Programs')) {
-    $link = $shell.CreateShortcut((Join-Path $shell.SpecialFolders($folder) 'Quesora Native.lnk'))
-    $rows += @{ target = $link.TargetPath; icon = $link.IconLocation }
-}
-ConvertTo-Json -InputObject $rows -Compress
-"""
-    result = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
-                            check=True, capture_output=True, text=True, encoding="utf-8", timeout=30)
+    """Inspect real installed Shell links only on the ephemeral runner guarded by main()."""
     expected_icon = installed / "icons" / ("quesora-" + version + ".ico")
     if digest(expected_icon) != digest(icon):
         raise AssertionError("Installed standalone icon differs from the reviewed full artwork")
-    for link in json.loads(result.stdout):
-        filename, index = link["icon"].rsplit(",", 1)
+    for folder in (shell_folder(0x10), shell_folder(0x02)):
+        filename = folder / "Quesora Native.lnk"
+        if not filename.is_file():
+            raise AssertionError("Installed shortcut missing: " + str(filename))
+        link = read_shell_link(filename)
+        icon_path, index = link["icon"].rsplit(",", 1)
         if pathlib.Path(link["target"]).resolve() != (installed / "QuesoraNativePreview.exe").resolve():
-            raise AssertionError("Shortcut target mismatch: actual=" + repr(link["target"]) + ", expected=" + str(installed / "QuesoraNativePreview.exe"))
-        if pathlib.Path(filename.strip('"')).resolve() != expected_icon.resolve() or index.strip() != "0":
-            raise AssertionError("Shortcut icon mismatch: actual=" + repr(link["icon"]) + ", expected=" + str(expected_icon))
-
+            raise AssertionError("Shortcut target mismatch: " + repr(link))
+        if pathlib.Path(icon_path).resolve() != expected_icon.resolve() or index != "0":
+            raise AssertionError("Shortcut icon mismatch: " + repr(link))
 
 def main():
     if os.environ.get("GITHUB_ACTIONS") != "true" or os.name != "nt":
