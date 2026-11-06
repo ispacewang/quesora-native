@@ -32,6 +32,32 @@ def digest(filename):
     return hashlib.sha256(pathlib.Path(filename).read_bytes()).hexdigest()
 
 
+
+def verify_shortcut_icons(installed, version, icon):
+    """Read real installed Shell links; never launch their targets or use a personal profile."""
+    # PowerShell is restricted to the ephemeral runner by main() before this is called.
+    script = """[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+$shell = New-Object -ComObject WScript.Shell
+$rows = @()
+foreach ($folder in @('Desktop', 'Programs')) {
+    $link = $shell.CreateShortcut((Join-Path $shell.SpecialFolders($folder) 'Quesora Native.lnk'))
+    $rows += @{ target = $link.TargetPath; icon = $link.IconLocation }
+}
+ConvertTo-Json -InputObject $rows -Compress
+"""
+    result = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
+                            check=True, capture_output=True, text=True, encoding="utf-8", timeout=30)
+    expected_icon = installed / "icons" / ("quesora-" + version + ".ico")
+    if digest(expected_icon) != digest(icon):
+        raise AssertionError("Installed standalone icon differs from the reviewed full artwork")
+    for link in json.loads(result.stdout):
+        filename, index = link["icon"].rsplit(",", 1)
+        if pathlib.Path(link["target"]).resolve() != (installed / "QuesoraNativePreview.exe").resolve():
+            raise AssertionError("Shortcut targets a stale executable")
+        if pathlib.Path(filename.strip('"')).resolve() != expected_icon.resolve() or index.strip() != "0":
+            raise AssertionError("Shortcut still uses a cached EXE/old icon path")
+
+
 def main():
     if os.environ.get("GITHUB_ACTIONS") != "true" or os.name != "nt":
         raise SystemExit("This test installs an application and is restricted to ephemeral GitHub Windows runners.")
@@ -56,7 +82,8 @@ def main():
         custom = temp / "自定义位置 with spaces" / "Quesora Native"
         db = data / "questions.db"
         try:
-            run_setup(baseline, "/DIR=" + str(custom))
+            run_setup(baseline, "/DIR=" + str(custom), "/TASKS=desktopicon")
+            verify_shortcut_icons(custom, "0.0.0-ci.1", icon)
             state = installed_values()
             if not state or pathlib.Path(state["InstallLocation"]).resolve() != custom.resolve():
                 raise AssertionError("Initial custom install path was not registered")
@@ -81,8 +108,10 @@ def main():
                 raise AssertionError("Installed-data marker missing")
             if digest(db) != before:
                 raise AssertionError("Upgrade modified user data")
+            verify_shortcut_icons(custom, report["version"], icon)
             # Reinstalling the same version must remain a single installation.
             run_setup(setup)
+            verify_shortcut_icons(custom, report["version"], icon)
             if digest(db) != before or digest(executable) != digest(distribution / "QuesoraNativePreview.exe"):
                 raise AssertionError("Same-version reinstall changed data or program")
             if run_setup(baseline, check=False).returncode == 0:
@@ -98,7 +127,7 @@ def main():
                 raise AssertionError("Uninstaller left the application registered or installed")
             if digest(db) != before:
                 raise AssertionError("Uninstaller removed or changed user data")
-            print("Installer regression passed: custom path, remembered upgrade path, executable replacement, reinstall, downgrade guard, data retention")
+            print("Installer regression passed: custom path, remembered upgrade path, executable replacement, reinstall, downgrade guard, data retention, versioned desktop/start-menu icon paths")
         finally:
             if installed_values() is not None and (custom / "unins000.exe").is_file():
                 subprocess.run([str(custom / "unins000.exe"), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"], timeout=120)

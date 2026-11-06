@@ -118,13 +118,18 @@ func (a *app) aiDialogs(c *ui.Context) {
 		}
 	}
 }
-func (a *app) aiSettingsBody(c *ui.Context) {
+
+// aiProviderPicker 在配置页和出题页共用品牌控件，使用独立标签标识当前操作。
+func (a *app) aiProviderPicker(c *ui.Context, active, labelPrefix string, showStatus bool, selectProvider func(string)) {
 	t := c.Theme()
-	ui.Text(c, "选择服务商").FontSize(12).FontWeight(500)
+	height := float32(72)
+	if showStatus {
+		height = 88
+	}
 	ui.Grid(c.Key("ai-providers")).FillWidth().Columns(5).Gap(8).Children(func() {
 		for _, p := range aiProviders {
-			selected := p.ID == a.ai.EditorProvider
-			box := ui.ButtonBase(c.Key(p.ID)).Label("AI服务商："+p.Name).MinWidth(0).Height(72).Border(1, t.Border).Background(t.Background).OnClick(func() { a.selectAIProvider(p.ID) })
+			selected := p.ID == active
+			box := ui.ButtonBase(c.Key(p.ID)).Label(labelPrefix+p.Name).MinWidth(0).Height(height).Border(1, t.Border).Background(t.Background).OnClick(func() { selectProvider(p.ID) })
 			if selected {
 				box.BorderColor(t.Accent).Background(t.Accent.Alpha(.06))
 			}
@@ -132,10 +137,22 @@ func (a *app) aiSettingsBody(c *ui.Context) {
 				ui.Column(c).AlignItems(ui.Center).Justify(ui.Center).Gap(8).Children(func() {
 					ui.Icon(c, aiProviderIcon(p.ID)).Size(24, 24)
 					ui.Text(c, p.Name).FontSize(11).FontWeight(500).SingleLine()
+					if showStatus {
+						status := "未配置"
+						if a.ai.Config.Profiles[p.ID].Key != "" {
+							status = "已配置"
+						}
+						ui.Text(c, status).FontSize(10).TextColor(t.TextMuted)
+					}
 				})
 			})
 		}
 	})
+}
+func (a *app) aiSettingsBody(c *ui.Context) {
+	t := c.Theme()
+	ui.Text(c, "选择服务商").FontSize(12).FontWeight(500)
+	a.aiProviderPicker(c, a.ai.EditorProvider, "AI服务商：", false, a.selectAIProvider)
 	settingRow(c, "提交时使用 AI 判题", "日常练习提交后交给当前模型判题；失败可重试。考试仍按本地标准答案评分。", a.ai.EditorAuto, func() { a.ai.EditorAuto = !a.ai.EditorAuto })
 	aiField(c, "API 地址", &a.ai.Editor.BaseURL, false)
 	aiField(c, "模型名称 / 推理接入点 ID", &a.ai.Editor.Model, false)
@@ -156,6 +173,13 @@ func (a *app) aiGenerateBody(c *ui.Context) {
 		a.aiPreviewBody(c)
 		return
 	}
+	ui.Text(c, "出题服务商").FontSize(12).FontWeight(500)
+	a.aiProviderPicker(c, a.ai.Config.Selected, "出题服务商：", true, a.selectAIGenerationProvider)
+	profile := a.ai.Config.Profiles[a.ai.Config.Selected]
+	ui.Row(c).FillWidth().Gap(12).AlignItems(ui.Center).Children(func() {
+		ui.Text(c, "当前模型："+profile.Model).Grow(1).MinWidth(0).FontSize(11).TextColor(t.TextMuted)
+		control(c, "configure-generation-provider", "配置此服务商", settingsIcon, outlineButton, func() { a.openAI("settings") }).Label("配置出题服务商").Height(28)
+	})
 	ui.Text(c, "根据主题或参考资料生成标准题目").FontSize(14).FontWeight(600)
 	ui.Row(c).FillWidth().Gap(12).Children(func() {
 		ui.Column(c).Grow(1).MinWidth(0).Children(func() { aiField(c, "新题库名称", &a.ai.Bank, false) })

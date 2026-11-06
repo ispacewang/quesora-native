@@ -1,4 +1,4 @@
-// 模型响应只作为数据解析。字段错误时明确失败，不根据“正确”等自然语言猜测答案。
+// 模型响应只作为数据解析。字段错误时明确失败；重复交由生成任务过滤，不猜测答案。
 package main
 
 import (
@@ -35,7 +35,6 @@ func parseAIQuestions(text, bank string) ([]question, error) {
 		return nil, errors.New("AI 返回的题目格式无效，请重新生成")
 	}
 	out := []question{}
-	seen := map[string]bool{}
 	for i, r := range rows {
 		r.Question = strings.TrimSpace(r.Question)
 		r.Answer = strings.TrimSpace(r.Answer)
@@ -45,10 +44,9 @@ func parseAIQuestions(text, bank string) ([]question, error) {
 				validKind = true
 			}
 		}
-		if !validKind || r.Question == "" || len(r.Question) > 12000 || r.Answer == "" || len(r.Answer) > 12000 || len(r.Explanation) > 18000 || seen[r.Question] {
-			return nil, fmt.Errorf("第 %d 道题的题型、题干或答案无效/重复", i+1)
+		if !validKind || r.Question == "" || len(r.Question) > 12000 || r.Answer == "" || len(r.Answer) > 12000 || len(r.Explanation) > 18000 {
+			return nil, fmt.Errorf("第 %d 道题的题型、题干或答案无效", i+1)
 		}
-		seen[r.Question] = true
 		q := question{Bank: bank, Kind: r.Type, Prompt: r.Question, TextAnswer: r.Answer, Explanation: r.Explanation, Meta: map[string]any{"一级纲要": "AI生成", "题目分类": r.Type}}
 		if q.Kind == "简答题" || q.Kind == "填空题" {
 			if len(r.Options) != 0 {

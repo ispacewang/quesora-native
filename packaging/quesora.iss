@@ -38,13 +38,16 @@ MinVersion=10.0
 WizardStyle=modern dynamic
 WizardSizePercent=110
 SetupIconFile={#IconFile}
-UninstallDisplayIcon={app}\QuesoraNativePreview.exe
+; A new icon path prevents Explorer reusing the old small Q cached for the EXE.
+UninstallDisplayIcon={app}\icons\quesora-{#AppVersion}.ico
 UninstallDisplayName=Quesora Native
 VersionInfoVersion={#NumericVersion}
 LicenseFile={#DistDir}\LICENSE
 CloseApplications=yes
 CloseApplicationsFilter=QuesoraNativePreview.exe
 RestartApplications=no
+; Ask Explorer to invalidate its cached shell icons after shortcut replacement.
+ChangesAssociations=yes
 Compression=lzma2
 SolidCompression=yes
 OutputDir={#OutputDir}
@@ -61,6 +64,7 @@ FinishedLabel=Quesora Native 已安装完成。%n%n你可以在“设置 → 数
 Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: "快捷方式："; Flags: unchecked
 
 [Files]
+Source: "{#IconFile}"; DestDir: "{app}\icons"; DestName: "quesora-{#AppVersion}.ico"; Flags: ignoreversion
 Source: "{#DistDir}\QuesoraNativePreview.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#DistDir}\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#DistDir}\NOTICE"; DestDir: "{app}"; Flags: ignoreversion
@@ -71,8 +75,8 @@ Source: "{#DistDir}\licenses\*"; DestDir: "{app}\licenses"; Flags: ignoreversion
 Source: "installed.marker"; DestDir: "{app}"; DestName: ".quesora-native-installed"; Attribs: hidden; Flags: ignoreversion
 
 [Icons]
-Name: "{autoprograms}\Quesora Native"; Filename: "{app}\QuesoraNativePreview.exe"; WorkingDir: "{app}"
-Name: "{autodesktop}\Quesora Native"; Filename: "{app}\QuesoraNativePreview.exe"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{autoprograms}\Quesora Native"; Filename: "{app}\QuesoraNativePreview.exe"; WorkingDir: "{app}"; IconFilename: "{app}\icons\quesora-{#AppVersion}.ico"; IconIndex: 0
+Name: "{autodesktop}\Quesora Native"; Filename: "{app}\QuesoraNativePreview.exe"; WorkingDir: "{app}"; IconFilename: "{app}\icons\quesora-{#AppVersion}.ico"; IconIndex: 0; Tasks: desktopicon
 
 [Registry]
 Root: HKCU; Subkey: "Software\QuesoraNative"; ValueType: string; ValueName: "InstallerVersion"; ValueData: "{#NumericVersion}"; Flags: uninsdeletevalue uninsdeletekeyifempty

@@ -53,3 +53,5 @@ resources/icon-design.json 记录图标导出参数。qa/icons 使用用户提�
 AI 维护边界：ai_provider.go 绑定五厂商官方 HTTPS 来源，禁止认证请求重定向，不记录服务原始错误或密钥；ai_config.go/ai_secret_windows.go 独立加密配置。ai_state.go 用任务世代拒绝取消后的迟到响应，短暂的配置原子写入不能取消。ai_tasks.go 先完整预览再事务入库，ai_grading.go 只更新练习记录，考试保持本地评分。Beta 默认关闭并在每个网络任务入口检查。
 
 appearance.go 将持久化外观选择与实时 dark 配色分开，MyGo OnUpdated 在 UI 线程同步系统变化，窗口关闭解除监听；学习设置版本 2 保留版本 1 的浅/深色选择。MyGo 固定 v0.7.4，升级前阅读其迁移指南并运行 migrate-ui 预览、mygo vet 和全部测试。
+
+Windows 图标缓存：安装器给桌面/开始菜单快捷方式指定 icons/quesora-<version>.ico 并通知 Shell 刷新，不能只覆盖同一路径 EXE 后期待缓存失效。运行窗口创建后用 SetIcon 设置完整题卡 PNG；不修改用户原图或用简化 Q 替代小尺寸。qa/installer_smoke.py 在临时 runner 验证真实快捷方式的 IconLocation 和 ICO 内容，不在开发机安装/重装。
