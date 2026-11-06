@@ -82,6 +82,21 @@ func (a *app) selectAIProvider(id string) {
 	a.ai.Message = ""
 	a.ai.Error = false
 }
+
+// selectAIGenerationProvider 切换当前会话服务商，不发送请求，也不更改任何厂商的模型/密钥。
+// 持久默认项仍由“保存配置”写入；缺少密钥时生成流程会打开对应配置，不回退到其他厂商。
+func (a *app) selectAIGenerationProvider(id string) {
+	if a.ai.Busy || a.ai.Saving || !a.ai.Config.Enabled {
+		return
+	}
+	if _, ok := providerByID(id); !ok {
+		return
+	}
+	a.ai.Config.Selected = id
+	a.ai.Message = ""
+	a.ai.Error = false
+}
+
 func (a *app) aiReady() (string, aiProfile, error) {
 	if !a.ai.Config.Enabled {
 		return "", aiProfile{}, errors.New("AI（Beta）已关闭，请先在设置中启用")

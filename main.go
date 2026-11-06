@@ -109,6 +109,14 @@ func main() {
 	mygo.App.WhenReady(func() {
 		a.configureAppearance()
 		a.win = mygo.NewWindow(mygo.WindowOptions{Title: "Quesora · 原生界面还原", Width: 1450, Height: 800, MinWidth: 800, MinHeight: 500, TitleBarStyle: mygo.TitleBarHidden, TitleBarHeight: 44, Vibrancy: mygo.VibrancyMica, Content: ui.View(a.view)})
+		// Set both native window icon sizes from the reviewed artwork instead of a cached EXE icon.
+		iconPNG, iconErr := nativeAssets.ReadFile("resources/app-icon.png")
+		if iconErr == nil {
+			iconErr = a.win.SetIcon(iconPNG)
+		}
+		if iconErr != nil {
+			log.Print("设置窗口图标失败：", iconErr)
+		}
 		a.dispatch = a.win.Update
 		a.configureUpdater()
 		a.pickBackup = func() (string, error) {

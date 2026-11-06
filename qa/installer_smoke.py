@@ -32,6 +32,76 @@ def digest(filename):
     return hashlib.sha256(pathlib.Path(filename).read_bytes()).hexdigest()
 
 
+
+
+def read_shell_link(filename):
+    """Read Unicode Shell-link fields without WScript.Shell's ANSI path conversion."""
+    import ctypes
+    import uuid
+    from ctypes import wintypes
+
+    class GUID(ctypes.Structure):
+        _fields_ = [("data", ctypes.c_ubyte * 16)]
+
+    def guid(text):
+        return GUID.from_buffer_copy(uuid.UUID(text).bytes_le)
+
+    def invoke(pointer, index, argtypes, *args):
+        table = ctypes.cast(pointer, ctypes.POINTER(ctypes.POINTER(ctypes.c_void_p))).contents
+        method = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p, *argtypes)(table[index])
+        hr = method(pointer, *args)
+        if hr < 0:
+            raise OSError("Shell-link read failed: HRESULT 0x%08x" % (hr & 0xffffffff))
+
+    ole = ctypes.OleDLL("ole32")
+    ole.CoInitializeEx(None, 2)
+    link, persist = ctypes.c_void_p(), ctypes.c_void_p()
+    try:
+        clsid = guid("00021401-0000-0000-c000-000000000046")
+        iid = guid("000214f9-0000-0000-c000-000000000046")  # IShellLinkW
+        ole.CoCreateInstance(ctypes.byref(clsid), None, 1, ctypes.byref(iid), ctypes.byref(link))
+        persist_iid = guid("0000010b-0000-0000-c000-000000000046")
+        invoke(link, 0, [ctypes.c_void_p, ctypes.c_void_p], ctypes.byref(persist_iid), ctypes.byref(persist))
+        invoke(persist, 5, [wintypes.LPCWSTR, wintypes.DWORD], str(filename), 0)
+        target, icon = ctypes.create_unicode_buffer(32768), ctypes.create_unicode_buffer(32768)
+        index = ctypes.c_int()
+        invoke(link, 3, [wintypes.LPWSTR, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD], target, len(target), None, 4)
+        invoke(link, 16, [wintypes.LPWSTR, ctypes.c_int, ctypes.POINTER(ctypes.c_int)], icon, len(icon), ctypes.byref(index))
+        return {"target": target.value, "icon": icon.value + "," + str(index.value)}
+    finally:
+        for pointer in (persist, link):
+            if pointer.value:
+                table = ctypes.cast(pointer, ctypes.POINTER(ctypes.POINTER(ctypes.c_void_p))).contents
+                ctypes.WINFUNCTYPE(ctypes.c_ulong, ctypes.c_void_p)(table[2])(pointer)
+        ole.CoUninitialize()
+
+
+def shell_folder(identifier):
+    """Respect redirected Desktop/Programs folders instead of assuming USERPROFILE paths."""
+    import ctypes
+    folder = ctypes.create_unicode_buffer(260)
+    result = ctypes.WinDLL("shell32").SHGetFolderPathW(None, identifier, None, 0, folder)
+    if result != 0:
+        raise OSError("Could not locate CI shortcut folder")
+    return pathlib.Path(folder.value)
+
+
+def verify_shortcut_icons(installed, version, icon):
+    """Inspect real installed Shell links only on the ephemeral runner guarded by main()."""
+    expected_icon = installed / "icons" / ("quesora-" + version + ".ico")
+    if digest(expected_icon) != digest(icon):
+        raise AssertionError("Installed standalone icon differs from the reviewed full artwork")
+    for folder in (shell_folder(0x10), shell_folder(0x02)):
+        filename = folder / "Quesora Native.lnk"
+        if not filename.is_file():
+            raise AssertionError("Installed shortcut missing: " + str(filename))
+        link = read_shell_link(filename)
+        icon_path, index = link["icon"].rsplit(",", 1)
+        if pathlib.Path(link["target"]).resolve() != (installed / "QuesoraNativePreview.exe").resolve():
+            raise AssertionError("Shortcut target mismatch: " + repr(link))
+        if pathlib.Path(icon_path).resolve() != expected_icon.resolve() or index != "0":
+            raise AssertionError("Shortcut icon mismatch: " + repr(link))
+
 def main():
     if os.environ.get("GITHUB_ACTIONS") != "true" or os.name != "nt":
         raise SystemExit("This test installs an application and is restricted to ephemeral GitHub Windows runners.")
@@ -56,7 +126,8 @@ def main():
         custom = temp / "自定义位置 with spaces" / "Quesora Native"
         db = data / "questions.db"
         try:
-            run_setup(baseline, "/DIR=" + str(custom))
+            run_setup(baseline, "/DIR=" + str(custom), "/TASKS=desktopicon")
+            verify_shortcut_icons(custom, "0.0.0-ci.1", icon)
             state = installed_values()
             if not state or pathlib.Path(state["InstallLocation"]).resolve() != custom.resolve():
                 raise AssertionError("Initial custom install path was not registered")
@@ -81,8 +152,10 @@ def main():
                 raise AssertionError("Installed-data marker missing")
             if digest(db) != before:
                 raise AssertionError("Upgrade modified user data")
+            verify_shortcut_icons(custom, report["version"], icon)
             # Reinstalling the same version must remain a single installation.
             run_setup(setup)
+            verify_shortcut_icons(custom, report["version"], icon)
             if digest(db) != before or digest(executable) != digest(distribution / "QuesoraNativePreview.exe"):
                 raise AssertionError("Same-version reinstall changed data or program")
             if run_setup(baseline, check=False).returncode == 0:
@@ -98,7 +171,7 @@ def main():
                 raise AssertionError("Uninstaller left the application registered or installed")
             if digest(db) != before:
                 raise AssertionError("Uninstaller removed or changed user data")
-            print("Installer regression passed: custom path, remembered upgrade path, executable replacement, reinstall, downgrade guard, data retention")
+            print("Installer regression passed: custom path, remembered upgrade path, executable replacement, reinstall, downgrade guard, data retention, versioned desktop/start-menu icon paths")
         finally:
             if installed_values() is not None and (custom / "unins000.exe").is_file():
                 subprocess.run([str(custom / "unins000.exe"), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"], timeout=120)
