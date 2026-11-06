@@ -6,30 +6,68 @@
 ![Windows x64](https://img.shields.io/badge/platform-Windows%20x64-4a7dbf)
 [![Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-4a7dbf)](LICENSE)
 
-Quesora 的 Go + [MyGo](https://github.com/egoist/mygo) 原生 Windows 实现。目标是保留 [Electron 版 Quesora](https://github.com/ispacewang/quesora) 的刷题、考试体验，减少运行时内存和分发体积。成品不依赖 Electron、Node.js、WebView 或 Python。
+Quesora 的 Go + [MyGo](https://github.com/egoist/mygo) 原生 Windows 版本。围绕刷题、题库、考试和可选 AI 助手，保留熟悉的三栏布局，减少内存和分发体积。运行不依赖 Electron、Node.js、WebView 或 Python。
 
-**当前为预览版，功能和视觉的完整 1:1 还原仍在进行中。** 优先支持离线题库导入、日常刷题和计时考试。
+**当前为预览版。AI 仍为 Beta，默认关闭，可在设置中显式开启或关闭。**
 
-![原生版预览（示例题库）](docs/images/preview-light.png)
+## 与 Electron 版的体积和内存对比
 
-## 与 Electron 版对比
+以下体积以本地 Electron **2.6.6** 成品与 Native **0.1.0-preview.5 / MyGo 0.7.4** 本轮构建为基线（2026-11-06，Windows x64）。MiB = 1024 × 1024 字节。
 
-| 项目 | Electron 版 | Native 版 |
-| --- | --- | --- |
-| 界面与运行时 | Electron + Vue 3，网页组件 | Go + MyGo，原生绘制，无浏览器运行时 |
-| 内存观察 | 约 160 MB | 约 30 MB |
-| Windows x64 成品 | NSIS 安装包，尚未与本版统一测量体积 | EXE 约 28.58 MiB；便携 ZIP 约 16.27 MiB |
-| 基本刷题 | 五种题型、筛选、随机、速刷、错题本 | 已实现，并支持重新作答开关、选项打乱、滚轮浏览多题库标签 |
-| Excel / CSV | 支持导入 | 支持 XLSX / XLS / CSV；识别表头说明、多工作表、分列选项和答案含义；按内容识别 Excel 格式 |
-| 考试与记录 | 自定义组卷、计时、成绩和历史 | 已实现；支持疑题标记、到期交卷、重要题规则、成绩与错题本保存 |
-| 外观 | 原版三栏界面、深色模式 | 延续配色和布局，Mica 顶栏、磨砂悬浮按钮、重要题动画；细节仍在还原 |
-| 公式、几何 | KaTeX / JSXGraph | 通用 LaTeX 和交互几何尚未完整移植，不能视为等价替代 |
-| PDF 试卷 | 网页排版与 PDF 导出 | 原生中文 PDF、分页和答案导出；复杂公式和图形排版尚未还原 |
-| AI 生成 / AI 判题 | 已提供 | 尚未移植，界面已隐藏 AI 入口；简答使用本地要点匹配 |
-| 自动更新 | 已提供 | 设置中检查官方发布、下载安装包、SHA-256 校验并确认启动覆盖升级 |
-| 数据 | Electron 本地数据 | 独立 SQLite 数据目录，设置内可备份；暂不自动迁移 Electron 数据 |
+| 项目 | Electron 2.6.6 | Native preview.5 |
+| --- | ---: | ---: |
+| 主程序 EXE | **193.33 MiB** | **30.94 MiB** |
+| Windows 安装包 | **204.57 MiB** | **17.12 MiB** |
+| 便携 ZIP | 未单独提供 | **17.22 MiB** |
+| 解包分发目录 | **468.03 MiB** | **31.13 MiB** |
+| 日常内存观察 | **约 160 MB** | **约 30 MB** |
+| 运行结构 | Chromium + Node.js，多进程 | Go + MyGo 原生绘制 |
 
-内存数字来自作者在同一台电脑上的手工观察，约减少 81%；没有统一统计进程集合、工作集口径、题库规模或运行时长，不是标准性能基准。体积为当前原生预览构建的近似值，内置中文字体与资源；后续功能会影响结果。
+主 EXE 体积约减少 84%；内存观察值约减少 81%。Electron 的 EXE 仍需随分发目录运行，Native EXE 自包含；这两行不是完整安装占用的同一口径。安装器另含安装/卸载程序，磁盘安装占用也不同于 ZIP 解包体积。
+
+体积取自本轮 CI #14 成品；后续文档或构建更新可能有小幅变化，记录见 [构建对比数据](resources/build-comparison.json)。内存值是作者此前在同一台电脑上的手工观察，未统一进程集合、工作集、题量和运行时长；不是标准基准，也不是本轮 MyGo/AI 的峰值内存保证。原生版尚未完整覆盖 Electron 的通用公式、几何和复杂 PDF 排版，功能差异应一起考虑。
+
+## 本轮新增与当前功能
+
+| 功能 | 原生版当前状态 |
+| --- | --- |
+| 日常刷题 | 单选、多选、判断、填空、简答；重新作答、随机题序、速刷、选项打乱、重要题、统计和错题本 |
+| 题库导入 | XLSX / XLS / CSV，按实际容器识别 Excel，理解表头和顶部说明，多工作表拆分题库；多题库标签支持鼠标滚轮横移 |
+| 考试 | 自定义题型/题量、计时、疑题标记、自动交卷、重要题规则、历史成绩和中文 PDF 导出 |
+| 外观 | **跟随系统 / 浅色 / 深色**；跟随模式响应 Windows 变化；Mica 顶栏；移除顶栏主题切换按钮 |
+| AI 助手（Beta） | **默认关闭**；DeepSeek、OpenAI、通义千问、智谱 GLM、豆包，品牌图标与独立密钥/模型配置 |
+| AI 出题 | 主题或参考资料出题，完整预览后确认入库；TXT/MD/CSV/Excel/DOCX/文本 PDF 在本地解析 |
+| AI 判题与诊断 | 可选提交时 AI 判题、单题复核后显式应用、薄弱点诊断；考试仍使用本地评分 |
+| 数据与更新 | SQLite 自动保存、设置备份/恢复、官方发布检查、下载安装包、SHA-256 校验与确认升级 |
+| 安装升级 | 记住自定义路径、覆盖程序、同版本重装、拒绝降级、升级/卸载保留用户数据 |
+| 当前迁移边界 | 通用 LaTeX、交互几何、复杂公式/图形 PDF、跨重启续考及导入前手动列映射仍待完善 |
+
+AI 为实验功能，关闭时取消请求并隐藏入口，已有题库和记录保留。用户自行配置服务商 Key，使用 Windows 当前用户加密保存；发送前可查看资料，生成结果不会直接入库。完整配置、资料限制、计费和验收边界见 [AI 使用说明](docs/ai.md)。
+
+MyGo 已升级至 [v0.7.4](https://github.com/egoist/mygo/releases/tag/v0.7.4)，使用 Windows 首帧显示、窗口边缘及高缩放修复；重要题动画响应减少动态效果。Excelize 已升级 v2.11.1，修复可达的 Excel 解析漏洞。
+
+## 当前界面截图
+
+截图均于 2026-11-06 从当前源码的离屏示例场景重新生成，不包含个人题库或密钥。Windows 上实际 Mica 效果由系统和透明设置决定，离屏图不代表原生窗口验收。
+
+### 刷题与深浅外观
+
+![浅色刷题界面](docs/images/preview-light.png)
+![深色刷题界面](docs/images/preview-dark.png)
+
+### 外观设置与 AI Beta 总开关
+
+![外观三选项和默认关闭的 AI Beta](docs/images/preview-settings.png)
+
+### AI 服务商配置与出题预览
+
+![五家厂商配置](docs/images/preview-ai-settings.png)
+![AI 出题预览](docs/images/preview-ai-preview.png)
+
+### 考试
+
+![新建考试](docs/images/preview-exam-setup.png)
+![考试结果](docs/images/preview-exam-result.png)
 
 ## 下载与使用
 
@@ -43,7 +81,7 @@ Quesora 的 Go + [MyGo](https://github.com/egoist/mygo) 原生 Windows 实现。
 
 安装版的数据在 `%LOCALAPPDATA%\QuesoraNative\data\questions.db`，卸载后仍保留。便携版仍使用程序旁的 `data/questions.db`，或通过 `-data-dir` 指定。若安装到旧便携版所在目录，首次启动会将该目录的旧数据库一致性快照迁移到用户数据目录，保留原文件；目标已有数据库时不会覆盖。其他便携目录不会自动扫描。
 
-顶部「设置」可切换学习偏好、打开数据目录、备份及恢复全部数据，并手动检查软件更新。主题、练习模式、筛选与当前题目会在重启后恢复。完整操作及格式说明见 [使用说明](docs/usage.md)。
+顶部「设置」可选择跟随系统/浅色/深色外观、开关 AI Beta、切换学习偏好、打开数据目录、备份及恢复全部数据，并手动检查软件更新。主题、练习模式、筛选与当前题目会在重启后恢复。完整操作及格式说明见 [使用说明](docs/usage.md)。
 
 ## 从源码构建
 

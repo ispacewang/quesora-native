@@ -35,9 +35,12 @@ func TestAIMaterialReadersPreserveSourceAndExtractText(t *testing.T) {
 	if e := p.OutputFileAndClose(pdfpath); e != nil {
 		t.Fatal(e)
 	}
+	renamed := filepath.Join(dir, "扩展名不符.xls")
+	rawXLSX, _ := os.ReadFile(xlsx)
+	os.WriteFile(renamed, rawXLSX, 0600)
 	txt := filepath.Join(dir, "资料.md")
 	os.WriteFile(txt, []byte("# 安全规范\n上岗前检查设备。"), 0600)
-	for _, v := range []struct{ path, want string }{{word, "上岗前检查设备。"}, {xlsx, "安全规范"}, {pdfpath, "SAFETY CHECK"}, {txt, "安全规范"}} {
+	for _, v := range []struct{ path, want string }{{word, "上岗前检查设备。"}, {xlsx, "安全规范"}, {renamed, "安全规范"}, {pdfpath, "SAFETY CHECK"}, {txt, "安全规范"}} {
 		t.Run(filepath.Ext(v.path), func(t *testing.T) {
 			before, _ := os.ReadFile(v.path)
 			m, e := readAIMaterial(context.Background(), v.path)

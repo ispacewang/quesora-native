@@ -56,7 +56,15 @@ func readAIMaterial(ctx context.Context, filename string) (m aiMaterial, err err
 		out.WriteString(s)
 		return ctx.Err()
 	}
-	switch strings.ToLower(filepath.Ext(filename)) {
+	format := strings.ToLower(filepath.Ext(filename))
+	if format == ".xls" || format == ".xlsx" {
+		detected, e := detectQuestionFileFormat(filename)
+		if e != nil {
+			return m, errors.New("Excel 资料格式无法识别")
+		}
+		format = detected
+	}
+	switch format {
 	case ".txt", ".md", ".csv":
 		raw, e := os.ReadFile(filename)
 		if e != nil {
