@@ -13,7 +13,7 @@ import (
 
 // updateState 保存窗口线程上的更新状态及可注入系统边界；后台通过 generation 检查后发布不可变结果。
 type updateState struct {
-	retryAfter                                       time.Time
+	retryAfter, lastChecked                          time.Time
 	busy, installing, failed, confirmOpen, installed bool
 	message                                          string
 	received, total                                  int64
@@ -64,12 +64,18 @@ func (a *app) finishUpdate(generation uint64, err error) bool {
 	return true
 }
 func (a *app) checkForUpdate() {
+	if a.updates.busy || a.updates.installing || a.updates.fetch == nil || a.restoreBusy {
+		return
+	}
 	if time.Now().Before(a.updates.retryAfter) {
 		a.updates.failed = true
 		a.updates.message = (&updateRateLimitError{Until: a.updates.retryAfter}).Error()
 		return
 	}
-	if a.updates.busy || a.updates.installing || a.updates.fetch == nil || a.restoreBusy {
+	// Repeated manual checks reuse a recent success and retain an already verified installer.
+	if !a.updates.lastChecked.IsZero() && time.Since(a.updates.lastChecked) < time.Minute {
+		a.updates.failed = false
+		a.updates.message = "刚刚已检查更新，可在 " + a.updates.lastChecked.Add(time.Minute).Local().Format("15:04:05") + " 后再次刷新；也可打开发布页面。"
 		return
 	}
 	a.updates.candidate = nil
@@ -82,6 +88,7 @@ func (a *app) checkForUpdate() {
 			if !a.finishUpdate(generation, err) {
 				return
 			}
+			a.updates.lastChecked = time.Now()
 			a.updates.candidate = candidate
 			if candidate == nil {
 				a.updates.message = "没有比当前版本更高的可用 Windows 安装版。"
