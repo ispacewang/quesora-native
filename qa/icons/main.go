@@ -1,5 +1,5 @@
-// Command icons adapts the reviewed square master to clean Windows/runtime PNG assets.
-// The master includes generator padding; the fixed crop/clip is part of this asset's export specification.
+// Command icons resizes the user-provided artwork for Windows and the native titlebar.
+// Every size preserves the full questionnaire and Q bubble from the same master.
 package main
 
 import (
@@ -10,16 +10,18 @@ import (
 	"image/png"
 	"math"
 	"os"
+	"path/filepath"
 )
 
-func exportIcon(src image.Image, size int, filename string) error {
+// fullIcon scales the whole reference once, then clips only the outer tile corners.
+// Do not replace small sizes with a different mark or crop the questionnaire details.
+func fullIcon(src image.Image, size int) (*image.NRGBA, error) {
 	bounds := src.Bounds()
 	if bounds.Dx() != bounds.Dy() {
-		return fmt.Errorf("icon master must be square")
+		return nil, fmt.Errorf("icon master must be square")
 	}
-	// Crop inside the approved tile to exclude stray pixels in generated transparent padding.
-	inset := int(math.Round(float64(bounds.Dx()) * .085))
-	crop := image.Rect(bounds.Min.X+inset, bounds.Min.Y+inset, bounds.Max.X-inset, bounds.Max.Y-inset)
+	// Preserve the original composition, including its internal margins.
+	crop := bounds
 	dst := image.NewNRGBA(image.Rect(0, 0, size, size))
 	padding := int(math.Round(float64(size) * .045))
 	tile := image.Rect(padding, padding, size-padding, size-padding)
@@ -51,35 +53,59 @@ func exportIcon(src image.Image, size int, filename string) error {
 			dst.SetNRGBA(x, y, v)
 		}
 	}
+	return dst, nil
+}
+
+func writePNG(filename string, img image.Image) error {
 	out, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
-	if err = png.Encode(out, dst); err != nil {
+	if err = png.Encode(out, img); err != nil {
 		out.Close()
 		return err
 	}
 	return out.Close()
 }
+
 func main() {
-	if len(os.Args) != 4 {
-		panic("usage: icons master.png windows.png runtime.png")
+	if len(os.Args) != 5 {
+		panic("usage: icons master.png windows.png runtime.png frames-directory")
 	}
-	f, e := os.Open(os.Args[1])
-	if e != nil {
-		panic(e)
+	f, err := os.Open(os.Args[1])
+	if err != nil {
+		panic(err)
 	}
-	src, e := png.Decode(f)
+	src, err := png.Decode(f)
 	f.Close()
-	if e != nil {
-		panic(e)
+	if err != nil {
+		panic(err)
 	}
-	for _, out := range []struct {
-		path string
-		size int
-	}{{os.Args[2], 256}, {os.Args[3], 128}} {
-		if e = exportIcon(src, out.size, out.path); e != nil {
-			panic(e)
+	large, err := fullIcon(src, 256)
+	if err != nil {
+		panic(err)
+	}
+	if err = writePNG(os.Args[2], large); err != nil {
+		panic(err)
+	}
+	runtime, err := fullIcon(src, 128)
+	if err != nil {
+		panic(err)
+	}
+	if err = writePNG(os.Args[3], runtime); err != nil {
+		panic(err)
+	}
+	if err = os.MkdirAll(os.Args[4], 0755); err != nil {
+		panic(err)
+	}
+	// Resize each DPI frame directly from the high-resolution source, never another PNG.
+	for _, size := range []int{16, 20, 24, 32, 40, 48, 60, 64, 72, 96, 128, 256} {
+		img, err := fullIcon(src, size)
+		if err != nil {
+			panic(err)
+		}
+		if err = writePNG(filepath.Join(os.Args[4], fmt.Sprintf("icon-%d.png", size)), img); err != nil {
+			panic(err)
 		}
 	}
 }

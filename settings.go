@@ -102,11 +102,20 @@ func (a *app) settingsDialog(c *ui.Context) {
 		ui.Scroll(c.Key("settings-scroll")).FillWidth().MaxHeight(max(120, height-210)).Children(func() {
 			ui.Column(c).FillWidth().Padding(0, 24, 20).Gap(20).Children(func() {
 				ui.Text(c, "外观与学习").FontSize(11).FontWeight(600).TextColor(t.TextMuted)
-				settingRow(c, "深色模式", "切换界面配色，关闭程序后保留选择。", a.dark, a.toggleTheme)
+				a.appearanceSettings(c)
 				settingRow(c, "重新作答", "重新进入已答题时隐藏旧答案，提交后更新记录。", a.repeatPractice, a.toggleRepeatPractice)
 				settingRow(c, "随机题序", "本轮随机排列题目，一轮内不重复。", a.random, a.toggleRandom)
 				settingRow(c, "速刷", "提交答案后自动进入下一题。", a.quick, a.toggleQuick)
 				settingRow(c, "打乱选项", "随机调整选择题的选项顺序。", a.shuffle, a.toggleShuffle)
+				line(c)
+				ui.Column(c).FillWidth().Disabled(a.ai.Saving || a.aiConfigWriting()).Children(func() {
+					settingRow(c, "AI 功能（Beta）", "实验功能，默认关闭。关闭会取消请求并清除未保存预览；已有题库和记录保留。", a.ai.Config.Enabled, a.toggleAIFeatures)
+				})
+				ui.Row(c).FillWidth().Gap(12).AlignItems(ui.Center).Children(func() {
+					ui.Text(c, "AI 服务 · Beta").FontSize(13).FontWeight(500)
+					ui.Spacer(c)
+					control(c, "ai-config", "配置服务商", aiSparkIcon, outlineButton, func() { a.settingsOpen = false; a.openAI("settings") }).Label("配置AI服务商")
+				})
 				line(c)
 				a.updateSection(c)
 				line(c)
@@ -124,7 +133,7 @@ func (a *app) settingsDialog(c *ui.Context) {
 						text = "正在备份…"
 					}
 					control(c, "backup", text, downloadIcon, primaryButton, a.backupData).Label("备份全部数据").Disabled(a.store == nil || a.backupBusy || a.importBusy || a.restoreBusy)
-					control(c, "restore", "从备份恢复…", historyIcon, outlineButton, a.chooseRestoreBackup).Label("从备份恢复").Disabled(a.store == nil || a.restoreBusy || a.restorePicking || a.backupBusy || a.importBusy || a.exam != nil)
+					control(c, "restore", "从备份恢复…", historyIcon, outlineButton, a.chooseRestoreBackup).Label("从备份恢复").Disabled(a.store == nil || a.restoreBusy || a.restorePicking || a.backupBusy || a.importBusy || a.exam != nil || a.ai.Busy || a.ai.Saving)
 				})
 				if a.backupMessage != "" {
 					color := t.TextMuted
@@ -133,7 +142,7 @@ func (a *app) settingsDialog(c *ui.Context) {
 					}
 					ui.Text(c, a.backupMessage).FillWidth().FontSize(12).LineHeight(1.5).TextColor(color).Selectable()
 				}
-				control(c, "reset", "重置练习记录…", nil, ghostButton, func() { a.settingsOpen = false; a.resetPracticeOpen = true }).TextColor(t.Danger).Disabled(a.store == nil || a.backupBusy || a.importBusy || a.exam != nil)
+				control(c, "reset", "重置练习记录…", nil, ghostButton, func() { a.settingsOpen = false; a.resetPracticeOpen = true }).TextColor(t.Danger).Disabled(a.store == nil || a.backupBusy || a.importBusy || a.exam != nil || a.ai.Busy || a.ai.Saving)
 			})
 		})
 		ui.Row(c).FillWidth().Padding(16, 24).BorderWidth(1, 0, 0, 0).BorderColor(t.Border).Justify(ui.End).Children(func() {

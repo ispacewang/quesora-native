@@ -127,8 +127,11 @@ func TestSystemCaptionButtonsAreNotDuplicated(t *testing.T) {
 	if _, ok := tt.Find("关闭窗口"); ok {
 		t.Fatal("custom close button overlaps native captions")
 	}
-	r, ok := tt.Find("深色模式")
+	if _, ok := tt.Find("深色模式"); ok {
+		t.Fatal("removed theme toggle remains")
+	}
+	r, ok := tt.Find("应用版本")
 	if !ok || r.X+r.W > 1312.1 {
-		t.Fatal("theme button overlaps system captions", r)
+		t.Fatal("title content overlaps system captions", r)
 	}
 }

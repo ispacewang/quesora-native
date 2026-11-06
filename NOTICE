@@ -15,3 +15,6 @@ Installer Simplified Chinese translation from Inno Setup is-6_7_1,
 Files/Languages/Unofficial/ChineseSimplified.isl, with original attribution.
 Source: packaging/INNO-LICENSE.txt and packaging/README.md.
 Distributions: licenses/Inno-Setup/LICENSE.txt.
+
+AI provider brand icons: Lobe Icons (@lobehub/icons-static-svg 1.95.1), Copyright (c) 2023 LobeHub, MIT. See resources/providers/LICENSE.txt and distribution licenses/Lobe-Icons. Brand trademarks belong to their owners.
+PDF text extraction: github.com/ledongthuc/pdf (Go Authors BSD-style license), copied in distribution licenses.

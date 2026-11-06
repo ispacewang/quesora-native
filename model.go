@@ -22,15 +22,20 @@ type question struct {
 // response 保存一次提交及其显示顺序；Choice 使用原始选项位掩码。
 // OptionOrder 使历史回顾和导出能重现提交时的选项字母。
 type response struct {
-	OptionOrder []int `json:",omitempty"`
-	Choice      uint
-	Text        string
-	Correct     bool
+	OptionOrder   []int `json:",omitempty"`
+	Choice        uint
+	Text          string
+	AIExplanation string `json:",omitempty"`
+	Correct       bool
 }
 
 // app 持有窗口生命周期内的模型、控件状态和稳定句柄。
 // 生产环境的字段变更在 UI 线程进行；后台任务只能经 publish 发布结果。
 type app struct {
+	appearance                                                     string
+	systemDark                                                     func() bool
+	themeOff                                                       func()
+	ai                                                             aiState
 	updates                                                        updateState
 	restoreOpen, restoreBusy, restorePicking                       bool
 	restorePath                                                    string
@@ -83,7 +88,7 @@ type app struct {
 // newApp 提供离屏测试的示例初态；main 在真实启动时用本地题库替换示例。
 func newApp() *app {
 	loadNativeAssets()
-	return &app{questions: demoQuestions(), bank: "数学基础", filter: "全部", answers: map[string]response{}, starred: map[string]bool{}, leftOpen: true, rightOpen: true}
+	return &app{appearance: "system", ai: newAIState(), questions: demoQuestions(), bank: "数学基础", filter: "全部", answers: map[string]response{}, starred: map[string]bool{}, leftOpen: true, rightOpen: true}
 }
 
 // visible 根据当前题库和组合筛选创建新切片，并应用本轮题序，不重排仓库原始数据。
@@ -114,6 +119,9 @@ func (a *app) current() (question, bool) {
 
 // navigate 开始一次新的题目访问，清空临时输入/动画并按重新作答设置恢复旧答案。
 func (a *app) navigate(index int) {
+	if a.ai.Busy && a.ai.Task == "answer" {
+		a.cancelAITask()
+	}
 	a.importantMotion = importantMotion{}
 	a.attemptAnsweredID = ""
 	a.reviewedQuestionID = ""
@@ -157,6 +165,10 @@ func (a *app) submit() {
 	}
 	if !isTextQuestion(q) && a.chosen == 0 || isTextQuestion(q) && strings.TrimSpace(a.typed) == "" {
 		a.notice = "请先作答，再提交答案。"
+		return
+	}
+	if a.ai.Config.Enabled && a.ai.Config.AutoJudge {
+		a.submitAIAnswer(q, response{Choice: a.chosen, Text: a.typed, OptionOrder: append([]int(nil), a.displayOptions(q)...)})
 		return
 	}
 	correct := judgeQuestion(q, response{Choice: a.chosen, Text: a.typed})

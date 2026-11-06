@@ -102,7 +102,11 @@ func (a *app) importantOptions(c *ui.Context, q question, done, correct bool, fn
 			a.importantMotion.Phase = phase
 			a.importantMotion.Start = c.Now()
 		}
+		// MyGo 0.7 settles custom motion when system reduced-motion or test instant mode is active.
 		motion := a.importantMotion
+		if c.Instant() {
+			motion.Start = c.Now().Add(-time.Second)
+		}
 		bitmap := importantSprite
 		if a.dark {
 			bitmap = importantSpriteDark

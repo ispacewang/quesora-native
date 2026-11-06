@@ -7,7 +7,8 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 ROOT_FILES = {"go.mod", "go.sum", "mygo.json", "README.md", "LICENSE", "NOTICE", "CHANGELOG.md", ".gitignore", ".gitattributes", "build-preview.py"}
 QA_FILES = {"qa/audit_repository.py", "qa/installer.py", "qa/installer_smoke.py", "qa/verify_executable.py", "qa/winres/main.go", "qa/icons/main.go", "qa/winres/go.mod", "qa/winres/go.sum"}
-OTHER_FILES = {".github/workflows/windows.yml", "docs/usage.md", "docs/development.md", "docs/images/preview-light.png", "testdata/legacy.xls", "packaging/quesora.iss", "packaging/ChineseSimplified.isl", "packaging/INNO-LICENSE.txt", "packaging/installed.marker", "packaging/README.md"}
+OTHER_FILES = {".github/workflows/windows.yml", "docs/usage.md", "docs/development.md", "docs/ai.md", "docs/images/preview-light.png", "testdata/legacy.xls", "packaging/quesora.iss", "packaging/ChineseSimplified.isl", "packaging/INNO-LICENSE.txt", "packaging/installed.marker", "packaging/README.md"}
+OTHER_FILES.update({"docs/images/"+name+".png" for name in ["preview-light","preview-dark","preview-settings","preview-ai-settings","preview-ai-preview","preview-exam-setup","preview-exam-result"]})
 SECRET_PATTERNS = [
     re.compile(rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
     re.compile(rb"(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{40,}|sk-[A-Za-z0-9_-]{30,})"),
@@ -20,6 +21,8 @@ def allowed(name):
     if name in ROOT_FILES | QA_FILES | OTHER_FILES:
         return True
     if len(p.parts) == 1 and p.suffix == ".go":
+        return True
+    if name in {"resources/providers/"+p+".svg" for p in ("openai","deepseek","qwen","zhipu","doubao")} or name=="resources/providers/LICENSE.txt":
         return True
     if name.startswith("resources/"):
         return p.suffix in {".png", ".json"} or name in {"resources/fonts/OFL.txt", "resources/fonts/LICENSE.txt"} or (name.startswith("resources/fonts/noto-") and name.endswith(".ttf.gz"))

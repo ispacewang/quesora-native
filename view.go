@@ -26,8 +26,11 @@ func (a *app) view(c *ui.Context) {
 			control(c, "help", "", helpIcon, ghostButton, func() { a.helpOpen = true }).Label("功能引导").TextColor(t.Text).Size(28, 28).Padding(0).Tooltip("功能引导")
 			control(c, "settings", "设置", settingsIcon, ghostButton, a.openSettings).Label("设置").TextColor(t.Text).Tooltip("学习设置与数据备份")
 			ui.Spacer(c)
+			if a.ai.Config.Enabled {
+				control(c, "ai-open", "AI · Beta", aiSparkIcon, ghostButton, func() { a.openAI("generate") }).Label("AI助手").TextColor(t.Text).Disabled(a.exam != nil || a.ai.Busy || a.ai.Saving)
+			}
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
-				control(c, "exam", "考试", plusIcon, primaryButton, a.openExamSetup).Disabled(a.exam != nil)
+				control(c, "exam", "考试", plusIcon, primaryButton, a.openExamSetup).Disabled(a.exam != nil || a.ai.Busy || a.ai.Saving)
 				control(c, "history", "我的", historyIcon, ghostButton, a.openHistory).TextColor(t.Text).Tooltip("查看保存的考试成绩和错题本")
 			})
 		})
@@ -56,11 +59,12 @@ func (a *app) view(c *ui.Context) {
 	a.settingsDialog(c)
 	a.restoreDialog(c)
 	a.updateInstallDialog(c)
+	a.aiDialogs(c)
 	if a.libraryStatus != "" && a.libraryStatus != "题库与答题记录自动保存" && a.libraryStatus != a.toastLast {
 		a.toastLast = a.libraryStatus
 		c.Toast(a.libraryStatus)
 	}
-	if a.exam == nil && !a.examSetupOpen && !a.historyOpen && !a.settingsOpen && !a.restoreOpen && !a.restoreBusy && !a.updates.confirmOpen && !a.updates.installing && a.quick && !a.answerHandle.FocusWithin(c) && !a.importOpen && !a.deleteOpen && !a.helpOpen && !a.resetPracticeOpen && !a.finishOpen {
+	if !a.ai.Open && !(a.ai.Busy && a.ai.Task == "answer") && a.exam == nil && !a.examSetupOpen && !a.historyOpen && !a.settingsOpen && !a.restoreOpen && !a.restoreBusy && !a.updates.confirmOpen && !a.updates.installing && a.quick && !a.answerHandle.FocusWithin(c) && !a.importOpen && !a.deleteOpen && !a.helpOpen && !a.resetPracticeOpen && !a.finishOpen {
 		for i, key := range []ui.Key{ui.KeyA, ui.KeyB, ui.KeyC, ui.KeyD} {
 			c.OnShortcut(0, key, func() {
 				if q, ok := a.current(); ok {
@@ -102,11 +106,6 @@ func (a *app) titlebar(c *ui.Context) {
 			ui.Text(c, "v"+appVersion).Label("应用版本").FontSize(11).TextColor(t.Text).SingleLine()
 		})
 		ui.Spacer(c)
-		symbol, label := moonIcon, "深色模式"
-		if a.dark {
-			symbol, label = sunIcon, "浅色模式"
-		}
-		control(c, "theme", "", symbol, ghostButton, a.toggleTheme).Label(label).Tooltip(label).TextColor(t.Text).Size(36, 44).Padding(10).Background(ui.Transparent)
 		if bar.Right > 0 {
 			ui.Box(c).Width(bar.Right).Height(44).Shrink(0)
 			return

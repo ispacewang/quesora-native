@@ -77,6 +77,7 @@ func (a *app) acceptRestoredState(next *app) {
 	a.bank, a.filter, a.filters = next.bank, next.filter, next.filters
 	a.importantOnly, a.onlyWrong = next.importantOnly, next.onlyWrong
 	a.random, a.quick, a.shuffle, a.repeatPractice = next.random, next.quick, next.shuffle, next.repeatPractice
+	a.appearance = next.appearance
 	a.dark, a.leftOpen, a.rightOpen = next.dark, next.leftOpen, next.rightOpen
 	a.order, a.index, a.optionOrder = next.order, next.index, next.optionOrder
 	a.chosen, a.typed = next.chosen, next.typed

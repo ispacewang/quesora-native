@@ -1,0 +1,23 @@
+{
+  "measured_on": "2026-11-06",
+  "electron_version": "2.6.6",
+  "electron_installer_bytes": 214508114,
+  "electron_exe_bytes": 202723840,
+  "electron_directory_bytes": 490759844,
+  "electron_source": "Local Electron 2.6.6 build: release/Quesora-Setup-2.6.6.exe and release/win-unpacked",
+  "memory": {
+    "electron_mb": 160,
+    "native_mb": 30,
+    "source": "Author observation reported in conversation; not a controlled benchmark",
+    "ai_beta_in_measurement": false
+  },
+  "native_version": "0.1.0-preview.5",
+  "mygo": "v0.7.4",
+  "native_exe_bytes": 32443904,
+  "native_zip_bytes": 18052555,
+  "native_build_commit": "692ad12fc3a91ab9f2c003f5ab4ab8669fbaa599",
+  "native_ci_run": 42141784370,
+  "native_ci_url": "https://github.com/ispacewang/quesora-native/actions/runs/42141784370",
+  "native_installer_bytes": 17955440,
+  "native_directory_bytes": 32643667
+}

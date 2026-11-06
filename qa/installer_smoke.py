@@ -51,7 +51,7 @@ def main():
         with zipfile.ZipFile(archive) as source:
             source.extractall(distribution)
         icon, resource = temp / "icon.ico", temp / "resources.syso"
-        subprocess.run(["go", "run", ".", str(ROOT / "resources/icon.png"), str(resource), str(icon)], cwd=ROOT / "qa/winres", check=True)
+        subprocess.run(["go", "run", ".", str(ROOT / "resources/icon-frames"), str(resource), str(icon)], cwd=ROOT / "qa/winres", check=True)
         baseline = build_installer(ROOT, distribution, "0.0.0-ci.1", icon, baseline_output, find_iscc())
         custom = temp / "自定义位置 with spaces" / "Quesora Native"
         db = data / "questions.db"

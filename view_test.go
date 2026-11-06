@@ -52,7 +52,9 @@ func TestFiltersThemeAndPanels(t *testing.T) {
 	if good, _ := a.counts(); good != 1 {
 		t.Fatal("text input did not reach grading")
 	}
-	click(t, tt, "深色模式")
+	click(t, tt, "设置")
+	click(t, tt, "外观：深色")
+	click(t, tt, "关闭设置")
 	if !a.dark {
 		t.Fatal("theme")
 	}
@@ -84,7 +86,7 @@ func TestResponsiveLayout(t *testing.T) {
 			a.rightOpen = false
 		}
 		tt := ui.NewTester(a.view, size[0], size[1])
-		for _, label := range []string{"选择题库：数学基础", "A. −1", "深色模式", "切换错题面板"} {
+		for _, label := range []string{"选择题库：数学基础", "A. −1", "设置", "切换错题面板"} {
 			r, ok := tt.Find(label)
 			if !ok || r.W <= 0 || r.X < 0 || r.X+r.W > float32(size[0])+1 {
 				t.Fatalf("%v %s bounds %+v", size, label, r)

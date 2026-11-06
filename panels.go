@@ -39,6 +39,9 @@ func (a *app) stats(c *ui.Context) {
 					})
 				}
 			})
+			if a.ai.Config.Enabled {
+				control(c, "ai-diagnose", "AI 薄弱点诊断", aiSparkIcon, outlineButton, a.diagnoseAI).Label("AI薄弱点诊断").Disabled(a.ai.Busy)
+			}
 			ui.Progress(c, float64(rate)/100).FillWidth().Height(4)
 			ui.Column(c).FillWidth().Gap(6).Children(func() { ui.Text(c, "题型正确率").FontSize(10).FontWeight(600).TextColor(t.TextMuted); a.radar(c) })
 			ui.Column(c).FillWidth().Gap(6).Children(func() {
