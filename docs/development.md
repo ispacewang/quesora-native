@@ -55,3 +55,6 @@ AI 维护边界：ai_provider.go 绑定五厂商官方 HTTPS 来源，禁止认�
 appearance.go 将持久化外观选择与实时 dark 配色分开，MyGo OnUpdated 在 UI 线程同步系统变化，窗口关闭解除监听；学习设置版本 2 保留版本 1 的浅/深色选择。MyGo 固定 v0.7.4，升级前阅读其迁移指南并运行 migrate-ui 预览、mygo vet 和全部测试。
 
 Windows 图标缓存：安装器给桌面/开始菜单快捷方式指定 icons/quesora-<version>.ico 并通知 Shell 刷新，不能只覆盖同一路径 EXE 后期待缓存失效。运行窗口创建后用 SetIcon 设置完整题卡 PNG；不修改用户原图或用简化 Q 替代小尺寸。qa/installer_smoke.py 在临时 runner 验证真实快捷方式的 IconLocation 和 ICO 内容，不在开发机安装/重装。
+
+预览通道更新由 update_feed.go 优先读取固定仓库的 releases.atom，仅接受本仓库合法 SemVer 标签链接，再用 HEAD 确认固定命名资产长度。订阅源或资产探测失败才使用 update.go 中的发布列表 API；不重试 403/429。UI 对成功检查缓存一分钟，保留候选和已校验文件；所有下载仍经官方 HTTPS 主机白名单与 SHA-256 检查。
+正式通道仍通过 API 验证 release.prerelease 标记，因为 Atom 不携带该字段，不能只根据标签格式区分正式与预发布。

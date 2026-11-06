@@ -240,15 +240,24 @@ func newUpdateHTTPClient() *http.Client {
 	}}
 }
 func updateGET(ctx context.Context, client *http.Client, raw string) (*http.Response, error) {
+	return updateRequest(ctx, client, http.MethodGet, raw)
+}
+
+// updateRequest shares HTTPS transport and server backoff rules for metadata GET and asset HEAD.
+func updateRequest(ctx context.Context, client *http.Client, method, raw string) (*http.Response, error) {
 	if e := ctx.Err(); e != nil {
 		return nil, e
 	}
-	req, e := http.NewRequestWithContext(ctx, http.MethodGet, raw, nil)
+	req, e := http.NewRequestWithContext(ctx, method, raw, nil)
 	if e != nil {
 		return nil, e
 	}
 	req.Header.Set("User-Agent", "QuesoraNative/"+appVersion)
-	req.Header.Set("Accept", "application/vnd.github+json")
+	if req.URL.Host == "api.github.com" {
+		req.Header.Set("Accept", "application/vnd.github+json")
+	} else if strings.HasSuffix(req.URL.Path, ".atom") {
+		req.Header.Set("Accept", "application/atom+xml")
+	}
 	resp, e := client.Do(req)
 	if e != nil {
 		return nil, e
@@ -265,9 +274,12 @@ func updateGET(ctx context.Context, client *http.Client, raw string) (*http.Resp
 					until = next
 				}
 			}
+			if date, e := http.ParseTime(resp.Header.Get("Retry-After")); e == nil && date.After(until) {
+				until = date
+			}
 			return nil, &updateRateLimitError{Until: until}
 		}
-		return nil, fmt.Errorf("更新服务返回 HTTP %d", resp.StatusCode)
+		return nil, &updateHTTPError{Status: resp.StatusCode}
 	}
 	return resp, nil
 }
@@ -287,9 +299,9 @@ func readUpdateText(ctx context.Context, client *http.Client, raw string, limit 
 	return data, nil
 }
 
-// fetchUpdate 使用发布列表而非 latest，以正确处理 GitHub 默认排除预发布版本的行为。
+// fetchUpdateAPI 是官方订阅源不可用时的备用；发布列表可包含预览版。
 // API 契约：https://docs.github.com/en/rest/releases/releases#list-releases
-func fetchUpdate(ctx context.Context, client *http.Client, current string) (*updateCandidate, error) {
+func fetchUpdateAPI(ctx context.Context, client *http.Client, current string) (*updateCandidate, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	data, e := readUpdateText(ctx, client, updateAPI, 4<<20)
