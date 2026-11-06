@@ -36,3 +36,7 @@ __pycache__/
 *.log
 Thumbs.db
 .DS_Store
+
+# AI credentials are local DPAPI-protected runtime data
+ai-settings.bin
+.ai-config-*

@@ -15,7 +15,7 @@ from qa.installer import build_installer
 
 ROOT = pathlib.Path(__file__).resolve().parent
 VERSION_RE = r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?"
-SCENES = ["restore", "update", "settings", "history", "empty", "unselected", "multi", "judge", "fill", "short", "selected", "correct", "wrong", "important", "exam", "exam-result", "exam-setup", "exam-setup-empty", "many-banks"]
+SCENES = ["ai-settings", "ai-beta-off", "ai-generate", "ai-preview", "ai-diagnose", "restore", "update", "settings", "history", "empty", "unselected", "multi", "judge", "fill", "short", "selected", "correct", "wrong", "important", "exam", "exam-result", "exam-setup", "exam-setup-empty", "many-banks"]
 
 
 def build_version(value):
@@ -82,7 +82,7 @@ def build(stage, distribution, version, env, installer=False, iscc=None):
               ("exam-setup-dark", ["-scene", "exam-setup", "-dark"]),
               ("many-banks-dark", ["-scene", "many-banks", "-dark"]),
               ("history-dark", ["-scene", "history", "-dark"]),
-              ("settings-dark", ["-scene", "settings", "-dark"])]
+              ("settings-dark", ["-scene", "settings", "-dark"]), ("ai-settings-dark", ["-scene", "ai-settings", "-dark"])]
     scenes += [(name, ["-scene", name]) for name in SCENES]
     for name, args in scenes:
         run([executable, "-snapshot", out / ("preview-" + name + ".png"), *args], stage, env)
@@ -97,6 +97,9 @@ def build(stage, distribution, version, env, installer=False, iscc=None):
     installer_license = licenses / "Inno-Setup"
     installer_license.mkdir()
     shutil.copyfile(ROOT / "packaging/INNO-LICENSE.txt", installer_license / "LICENSE.txt")
+    ai_license = licenses / "Lobe-Icons"
+    ai_license.mkdir()
+    shutil.copyfile(ROOT / "resources/providers/LICENSE.txt", ai_license / "LICENSE.txt")
     font_license = licenses / "Noto-Sans-SC"
     font_license.mkdir()
     for name in ("LICENSE.txt", "OFL.txt"):

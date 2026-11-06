@@ -19,7 +19,7 @@ func TestLearningPreferencesRestoreModesFiltersAndQuestion(t *testing.T) {
 	a.bank = a.questions[0].Bank
 	a.jobs = newLibraryJobs()
 	a.dispatch = func(fn func()) { t.Error("unexpected persistence error") }
-	a.toggleTheme()
+	a.setAppearance("dark")
 	a.toggleQuick()
 	a.toggleShuffle()
 	a.toggleRandom()

@@ -28,6 +28,12 @@ func main() {
 	})
 	a := newApp()
 	a.dark = *dark
+	if darkSpecified {
+		a.appearance = "light"
+		if *dark {
+			a.appearance = "dark"
+		}
+	}
 	a.importOpen = *showUpload
 	if *snapshot != "" {
 		a.configureScene(*scene)
@@ -87,20 +93,21 @@ func main() {
 			}
 			if darkSpecified {
 				a.dark = *dark
+				a.appearance = "light"
+				if *dark {
+					a.appearance = "dark"
+				}
 			}
 			if a.libraryStatus == "" {
 				a.libraryStatus = "题库与答题记录自动保存"
 			}
 		}
 	}
+	a.configureAI()
 	a.jobs = newLibraryJobs()
 	defer a.jobs.close()
 	mygo.App.WhenReady(func() {
-		if a.dark {
-			mygo.Theme.SetSource(mygo.ThemeDark)
-		} else {
-			mygo.Theme.SetSource(mygo.ThemeLight)
-		}
+		a.configureAppearance()
 		a.win = mygo.NewWindow(mygo.WindowOptions{Title: "Quesora · 原生界面还原", Width: 1450, Height: 800, MinWidth: 800, MinHeight: 500, TitleBarStyle: mygo.TitleBarHidden, TitleBarHeight: 44, Vibrancy: mygo.VibrancyMica, Content: ui.View(a.view)})
 		a.dispatch = a.win.Update
 		a.configureUpdater()
@@ -119,6 +126,12 @@ func main() {
 			return mygo.Dialog.Open(mygo.OpenDialogOptions{Parent: a.win, Title: "上传题库", Filters: []mygo.FileFilter{{Name: "题库文件", Extensions: []string{"xlsx", "xls", "csv"}}}})
 		}
 		a.win.OnClosed(func() {
+			if a.themeOff != nil {
+				a.themeOff()
+			}
+			if a.ai.cancel != nil {
+				a.ai.cancel()
+			}
 			if a.updates.cancel != nil {
 				a.updates.cancel()
 			}

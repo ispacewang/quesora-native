@@ -7,13 +7,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/egoist/mygo"
 	"sort"
 )
 
 // learningPreferences 是 SQLite 中的版本化设置快照；QuestionID 在题序重建后用于恢复位置。
 type learningPreferences struct {
 	Version                                           int
+	Appearance                                        string
 	Dark, Random, Quick, Shuffle, LeftOpen, RightOpen bool
 	Bank, QuestionID, Filter                          string
 	Filters                                           []string
@@ -22,7 +22,7 @@ type learningPreferences struct {
 
 // preferences 在 UI 线程捕获可序列化值，并排序筛选集合，使去重比较不受 map 迭代顺序影响。
 func (a *app) preferences() learningPreferences {
-	p := learningPreferences{Version: 1, Dark: a.dark, Random: a.random, Quick: a.quick, Shuffle: a.shuffle, LeftOpen: a.leftOpen, RightOpen: a.rightOpen, Bank: a.bank, Filter: a.filter, ImportantOnly: a.importantOnly, OnlyWrong: a.onlyWrong}
+	p := learningPreferences{Version: 2, Appearance: a.appearance, Dark: a.dark, Random: a.random, Quick: a.quick, Shuffle: a.shuffle, LeftOpen: a.leftOpen, RightOpen: a.rightOpen, Bank: a.bank, Filter: a.filter, ImportantOnly: a.importantOnly, OnlyWrong: a.onlyWrong}
 	if q, ok := a.current(); ok {
 		p.QuestionID = q.ID
 	}
@@ -77,8 +77,19 @@ func (a *app) restorePreferences() error {
 	if err = json.Unmarshal([]byte(raw), &p); err != nil {
 		return err
 	}
-	if p.Version != 1 {
+	if p.Version != 1 && p.Version != 2 {
 		return fmt.Errorf("不支持的学习设置版本")
+	}
+	if p.Version == 1 {
+		a.appearance = "light"
+		if p.Dark {
+			a.appearance = "dark"
+		}
+	} else {
+		if !validAppearance(p.Appearance) {
+			return fmt.Errorf("外观设置无效")
+		}
+		a.appearance = p.Appearance
 	}
 	a.dark, a.random, a.quick, a.shuffle = p.Dark, p.Random, p.Quick, p.Shuffle
 	a.leftOpen, a.rightOpen = p.LeftOpen, p.RightOpen
@@ -120,17 +131,6 @@ func (a *app) restorePreferences() error {
 	return nil
 }
 
-func (a *app) applyTheme() {
-	if a.win != nil {
-		if a.dark {
-			mygo.Theme.SetSource(mygo.ThemeDark)
-		} else {
-			mygo.Theme.SetSource(mygo.ThemeLight)
-		}
-	}
-	a.persistPreferences()
-}
-func (a *app) toggleTheme()   { a.dark = !a.dark; a.applyTheme() }
 func (a *app) toggleRandom()  { a.random = !a.random; a.reorder(); a.navigate(0) }
 func (a *app) toggleQuick()   { a.quick = !a.quick; a.persistPreferences() }
 func (a *app) toggleShuffle() { a.shuffle = !a.shuffle; a.prepareOptions(); a.persistPreferences() }

@@ -83,6 +83,12 @@ func (a *app) quiz(c *ui.Context) {
 							control(c, "next", "下一题 →", nil, primaryButton, a.nextQuestion).Label("下一题").Height(32)
 						} else {
 							label := "提交答案"
+							if a.ai.Config.Enabled && a.ai.Config.AutoJudge {
+								label = "提交并 AI 判题"
+							}
+							if a.ai.Busy && a.ai.Task == "answer" {
+								label = "AI 正在判题…"
+							}
 							if a.quick {
 								label = "提交并继续 →"
 							}
@@ -91,6 +97,10 @@ func (a *app) quiz(c *ui.Context) {
 							if isTextQuestion(q) {
 								enabled = strings.TrimSpace(a.typed) != ""
 							}
+							if a.ai.Busy && a.ai.Task == "answer" {
+								enabled = false
+								control(c, "cancel-ai-answer", "取消判题", nil, outlineButton, a.cancelAITask).Label("取消AI判题")
+							}
 							if !enabled {
 								b.Disabled(true)
 							}
@@ -98,6 +108,9 @@ func (a *app) quiz(c *ui.Context) {
 					})
 					if done {
 						a.answerFeedback(c, q, r)
+						if a.ai.Config.Enabled {
+							control(c, "ai-review", "AI 复核本题", aiSparkIcon, outlineButton, a.judgeAIQuestion).Label("AI复核本题").Margin(12, 0, 0, 0).Disabled(a.ai.Busy)
+						}
 					}
 				})
 			})
@@ -171,6 +184,9 @@ func (a *app) questionToolbar(c *ui.Context, q question) {
 			}
 		})
 		ui.Row(c.Key("modes")).Label("练习模式").FillWidth().Gap(6).Wrap().AlignItems(ui.Center).Children(func() {
+			if a.ai.Config.Enabled {
+				control(c, "ai-grade-mode", "AI判题设置", aiSparkIcon, outlineButton, func() { a.openAI("settings") }).Tooltip("在服务商配置中选择是否使用 AI 判题").Height(26)
+			}
 			ui.Text(c, "练习").FontSize(11).TextColor(t.TextMuted).Margin(0, 4, 0, 0)
 			for _, mode := range []struct {
 				name   string
@@ -281,6 +297,9 @@ func (a *app) answerFeedback(c *ui.Context, q question, r response) {
 				caption(c, "正确答案：")
 				ui.Text(c, a.displayAnswer(q)).FontSize(14).FontWeight(600).TextColor(t.Success)
 			})
+		}
+		if r.AIExplanation != "" {
+			ui.Text(c, "AI 复核："+r.AIExplanation).FillWidth().FontSize(13).LineHeight(1.6).TextColor(t.TextMuted)
 		}
 		if q.Explanation != "" {
 			ui.Column(c.Key("explanation")).FillWidth().Padding(16).Gap(4).Background(t.Surface.Alpha(.5)).Children(func() {

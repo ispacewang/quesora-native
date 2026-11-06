@@ -36,6 +36,29 @@ func (a *app) configureScene(scene string) {
 	a.questions = append(a.questions, question{ID: "c1", Bank: "计算机基础", Kind: "单选题", Prompt: "下列哪一种数据结构遵循先进先出？", Options: []string{"栈", "队列"}, Answer: 2})
 	a.navigate(0)
 	switch scene {
+	case "ai-settings":
+		a.ai.Config.Enabled = true
+		a.openAI("settings")
+	case "ai-beta-off":
+		a.openSettings()
+	case "ai-generate":
+		a.ai.Config.Enabled = true
+		a.openAI("generate")
+		a.ai.Topic = "岗位安全培训"
+		a.ai.Bank = "安全知识巩固"
+		a.ai.Material = "上岗前检查设备状态；异常时停止作业并报告。"
+	case "ai-preview":
+		a.ai.Config.Enabled = true
+		a.openAI("generate")
+		a.store = &questionStore{path: "data/questions.db"}
+		a.ai.Preview = append([]question(nil), a.questions[:3]...)
+		a.ai.Message = "已生成 3 道题，请检查后保存。"
+	case "ai-diagnose":
+		a.ai.Config.Enabled = true
+		a.answers[a.questions[0].ID] = response{Choice: 2, Correct: true}
+		a.answers[a.questions[1].ID] = response{Choice: 1}
+		a.openAI("diagnose")
+		a.ai.Result = "多选题的关键概念辨析需要加强。建议按知识点整理易混选项，复习后进行一轮不看答案的重新作答。"
 	case "restore":
 		a.settingsOpen = true
 		a.restoreOpen = true
