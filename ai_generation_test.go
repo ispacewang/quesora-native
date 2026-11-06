@@ -252,6 +252,7 @@ func TestAIGenerationPageSelectsEveryConfiguredProvider(t *testing.T) {
 			a.ai.Config.Profiles[provider.ID] = profile
 			a.openAI("generate")
 			tt := ui.NewTester(a.view, 800, 600)
+			click(t, tt, "选择出题服务商")
 			click(t, tt, "出题服务商："+provider.Name)
 			if a.ai.Config.Selected != provider.ID {
 				t.Fatal("generation selection did not change", a.ai.Config.Selected)
@@ -290,6 +291,7 @@ func TestAIUnconfiguredGenerationProviderOpensMatchingSettingsWithoutTraffic(t *
 	})
 	a.openAI("generate")
 	tt := ui.NewTester(a.view, 800, 600)
+	click(t, tt, "选择出题服务商")
 	click(t, tt, "出题服务商：通义千问")
 	if _, ok := tt.Find("配置出题服务商"); !ok {
 		t.Fatal("missing configuration entry")
@@ -314,5 +316,30 @@ func TestAIGenerationProviderPickerKeepsFooterAccessible(t *testing.T) {
 				t.Fatal("generation action clipped", height, label, bounds)
 			}
 		}
+	}
+}
+
+func TestAIGenerationProviderDropdownIsCompactAndKeyboardAccessible(t *testing.T) {
+	a, _ := generationTestApp(t, 1)
+	a.openAI("generate")
+	tt := ui.NewTester(a.view, 800, 600)
+	bounds, ok := tt.Find("选择出题服务商")
+	if !ok || bounds.H > 40 {
+		t.Fatal("provider selection is not compact", bounds)
+	}
+	if _, ok := tt.Find("出题服务商：OpenAI"); ok {
+		t.Fatal("provider choices occupy space when dropdown is closed")
+	}
+	click(t, tt, "选择出题服务商")
+	tt.Key(0, ui.KeyEnd)
+	tt.Key(0, ui.KeyEnter)
+	if a.ai.Config.Selected != "doubao" {
+		t.Fatal("keyboard did not choose last provider", a.ai.Config.Selected)
+	}
+	click(t, tt, "选择出题服务商")
+	tt.Key(0, ui.KeyHome)
+	tt.Key(0, ui.KeyEscape)
+	if a.ai.Config.Selected != "doubao" {
+		t.Fatal("escape changed the provider")
 	}
 }

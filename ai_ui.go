@@ -119,40 +119,23 @@ func (a *app) aiDialogs(c *ui.Context) {
 	}
 }
 
-// aiProviderPicker 在配置页和出题页共用品牌控件，使用独立标签标识当前操作。
-func (a *app) aiProviderPicker(c *ui.Context, active, labelPrefix string, showStatus bool, selectProvider func(string)) {
+func (a *app) aiSettingsBody(c *ui.Context) {
 	t := c.Theme()
-	height := float32(72)
-	if showStatus {
-		height = 88
-	}
+	ui.Text(c, "选择服务商").FontSize(12).FontWeight(500)
 	ui.Grid(c.Key("ai-providers")).FillWidth().Columns(5).Gap(8).Children(func() {
 		for _, p := range aiProviders {
-			selected := p.ID == active
-			box := ui.ButtonBase(c.Key(p.ID)).Label(labelPrefix+p.Name).MinWidth(0).Height(height).Border(1, t.Border).Background(t.Background).OnClick(func() { selectProvider(p.ID) })
-			if selected {
+			box := ui.ButtonBase(c.Key(p.ID)).Label("AI服务商："+p.Name).MinWidth(0).Height(72).Border(1, t.Border).Background(t.Background).OnClick(func() { a.selectAIProvider(p.ID) })
+			if p.ID == a.ai.EditorProvider {
 				box.BorderColor(t.Accent).Background(t.Accent.Alpha(.06))
 			}
 			box.Children(func() {
 				ui.Column(c).AlignItems(ui.Center).Justify(ui.Center).Gap(8).Children(func() {
 					ui.Icon(c, aiProviderIcon(p.ID)).Size(24, 24)
 					ui.Text(c, p.Name).FontSize(11).FontWeight(500).SingleLine()
-					if showStatus {
-						status := "未配置"
-						if a.ai.Config.Profiles[p.ID].Key != "" {
-							status = "已配置"
-						}
-						ui.Text(c, status).FontSize(10).TextColor(t.TextMuted)
-					}
 				})
 			})
 		}
 	})
-}
-func (a *app) aiSettingsBody(c *ui.Context) {
-	t := c.Theme()
-	ui.Text(c, "选择服务商").FontSize(12).FontWeight(500)
-	a.aiProviderPicker(c, a.ai.EditorProvider, "AI服务商：", false, a.selectAIProvider)
 	settingRow(c, "提交时使用 AI 判题", "日常练习提交后交给当前模型判题；失败可重试。考试仍按本地标准答案评分。", a.ai.EditorAuto, func() { a.ai.EditorAuto = !a.ai.EditorAuto })
 	aiField(c, "API 地址", &a.ai.Editor.BaseURL, false)
 	aiField(c, "模型名称 / 推理接入点 ID", &a.ai.Editor.Model, false)
@@ -167,18 +150,71 @@ func (a *app) aiSettingsBody(c *ui.Context) {
 	}
 	ui.Text(c, "测试连接会发送一条极短请求，可能产生少量费用。").FillWidth().FontSize(11).TextColor(t.TextMuted)
 }
+
+// aiGenerationProviderSelect 使用 MyGo 原生选择器，收起时只占一行并保留键盘导航。
+func (a *app) aiGenerationProviderSelect(c *ui.Context) {
+	t := c.Theme()
+	sel := ui.SelectBase(c.Key("generation-provider"), &a.ai.Config.Selected)
+	trigger := sel.Trigger.Label("选择出题服务商").FillWidth().MinWidth(0).Height(36).Padding(0, 12).Border(1, t.Border).Background(t.Background).Radius(0).OnChange(func() { a.selectAIGenerationProvider(a.ai.Config.Selected) })
+	if trigger.Hovered() {
+		trigger.BorderColor(t.TextMuted.Alpha(.5))
+	}
+	if trigger.Focused() || sel.Open() {
+		trigger.BorderColor(t.Accent)
+	}
+	trigger.Children(func() {
+		p, _ := providerByID(a.ai.Config.Selected)
+		ui.Row(c).FillWidth().MinWidth(0).Gap(8).AlignItems(ui.Center).Children(func() {
+			ui.Icon(c, aiProviderIcon(p.ID)).Size(18, 18).Shrink(0)
+			ui.Text(c, p.Name).Grow(1).MinWidth(0).SingleLine().FontSize(13)
+			ui.Icon(c, rightIcon).Rotate(90).Size(12, 12).Shrink(0).TextColor(t.TextMuted)
+		})
+	})
+	sel.Popup(func(panel ui.Element) {
+		panel.Padding(4).Border(1, t.Border).Radius(0).Background(t.Background).Shadow(0, 4, 12, 0, ui.RGBA(0, 0, 0, .12))
+		ui.Scroll(c).FillWidth().MaxHeight(220).Children(func() {
+			for _, p := range aiProviders {
+				item := sel.Item(p.ID).Label("出题服务商："+p.Name).FillWidth().Padding(8, 10)
+				if item.Highlighted() {
+					item.Background(t.Surface)
+				}
+				item.Children(func() {
+					ui.Row(c).FillWidth().Gap(8).AlignItems(ui.Center).Children(func() {
+						ui.Icon(c, aiProviderIcon(p.ID)).Size(16, 16).Shrink(0)
+						ui.Text(c, p.Name).Grow(1).MinWidth(0).SingleLine().FontSize(13)
+						status := "未配置"
+						if a.ai.Config.Profiles[p.ID].Key != "" {
+							status = "已配置"
+						}
+						ui.Text(c, status).FontSize(11).TextColor(t.TextMuted)
+						if p.ID == a.ai.Config.Selected {
+							ui.Icon(c, checkIcon).Size(13, 13).Shrink(0).TextColor(t.Accent)
+						}
+					})
+				})
+			}
+		})
+	})
+}
+
 func (a *app) aiGenerateBody(c *ui.Context) {
 	t := c.Theme()
 	if len(a.ai.Preview) > 0 {
 		a.aiPreviewBody(c)
 		return
 	}
-	ui.Text(c, "出题服务商").FontSize(12).FontWeight(500)
-	a.aiProviderPicker(c, a.ai.Config.Selected, "出题服务商：", true, a.selectAIGenerationProvider)
-	profile := a.ai.Config.Profiles[a.ai.Config.Selected]
-	ui.Row(c).FillWidth().Gap(12).AlignItems(ui.Center).Children(func() {
-		ui.Text(c, "当前模型："+profile.Model).Grow(1).MinWidth(0).FontSize(11).TextColor(t.TextMuted)
-		control(c, "configure-generation-provider", "配置此服务商", settingsIcon, outlineButton, func() { a.openAI("settings") }).Label("配置出题服务商").Height(28)
+	ui.Column(c.Key("generation-provider-field")).FillWidth().Gap(6).Children(func() {
+		ui.Text(c, "出题服务商").FontSize(12).FontWeight(500)
+		ui.Row(c).FillWidth().Gap(12).AlignItems(ui.Center).Children(func() {
+			ui.Column(c).Grow(1).MinWidth(0).Children(func() { a.aiGenerationProviderSelect(c) })
+			control(c, "configure-generation-provider", "配置此服务商", settingsIcon, outlineButton, func() { a.openAI("settings") }).Label("配置出题服务商").Height(36)
+		})
+		profile := a.ai.Config.Profiles[a.ai.Config.Selected]
+		status := "未配置"
+		if profile.Key != "" {
+			status = "已配置"
+		}
+		ui.Text(c, "当前模型："+profile.Model+" · "+status).FillWidth().FontSize(11).TextColor(t.TextMuted)
 	})
 	ui.Text(c, "根据主题或参考资料生成标准题目").FontSize(14).FontWeight(600)
 	ui.Row(c).FillWidth().Gap(12).Children(func() {
