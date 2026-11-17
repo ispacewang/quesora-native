@@ -4,6 +4,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"math"
 	"testing"
+	"time"
 )
 
 func TestNativeGeometry(t *testing.T) {
@@ -78,8 +79,8 @@ func TestRandomCycleAndQuickMode(t *testing.T) {
 	a.quick = true
 	a.choose(1)
 	a.submit()
-	if a.index != 1 || !a.answers["m1"].Correct {
-		t.Fatal("quick mode did not save and advance")
+	if a.index != 0 || !a.answers["m1"].Correct {
+		t.Fatal("quick mode did not save and hold the answer")
 	}
 	a.navigate(len(a.visible()) - 1)
 	a.nextQuestion()
@@ -94,8 +95,12 @@ func TestQuickKeyboardDoesNotStealTextInput(t *testing.T) {
 	tt := ui.NewTester(a.view, 1450, 800)
 	tt.Key(0, ui.KeyB)
 	tt.Key(0, ui.KeySpace)
-	if !a.answers["m1"].Correct || a.index != 1 {
-		t.Fatal("quick keyboard choice")
+	if !a.answers["m1"].Correct || a.index != 0 {
+		t.Fatal("quick keyboard choice should display its result")
+	}
+	tt.Advance(quickFeedbackDuration)
+	if a.index != 1 {
+		t.Fatal("quick keyboard choice did not advance")
 	}
 	a.filter = "填空题"
 	a.filters = nil
@@ -133,5 +138,71 @@ func TestSystemCaptionButtonsAreNotDuplicated(t *testing.T) {
 	r, ok := tt.Find("应用版本")
 	if !ok || r.X+r.W > 1312.1 {
 		t.Fatal("title content overlaps system captions", r)
+	}
+}
+
+func TestQuickModeShowsResultBeforeAdvancing(t *testing.T) {
+	for _, tc := range []struct {
+		key     ui.Key
+		label   string
+		correct bool
+	}{
+		{ui.KeyB, "回答正确！", true},
+		{ui.KeyA, "回答错误", false},
+	} {
+		t.Run(tc.label, func(t *testing.T) {
+			a := newApp()
+			a.quick = true
+			tt := ui.NewTester(a.view, 1450, 980)
+			tt.Key(0, tc.key)
+			tt.Key(0, ui.KeySpace)
+			if a.index != 0 {
+				t.Fatal("quick mode advanced before showing its result")
+			}
+			if r, ok := a.answers["m1"]; !ok || r.Correct != tc.correct {
+				t.Fatal(r, ok)
+			}
+			tt.Advance(599 * time.Millisecond)
+			bounds, ok := tt.Find(tc.label)
+			if !ok || bounds.Y < 0 || bounds.Y+bounds.H > 980 || a.index != 0 {
+				t.Fatalf("question result does not remain visible before auto advance: %v, index %d", bounds, a.index)
+			}
+			tt.Advance(time.Millisecond)
+			if a.index != 1 {
+				t.Fatal("quick mode did not advance after feedback")
+			}
+		})
+	}
+}
+
+func TestQuickAdvanceDoesNotSkipAfterManualNavigation(t *testing.T) {
+	a := newApp()
+	a.quick = true
+	tt := ui.NewTester(a.view, 1450, 800)
+	tt.Key(0, ui.KeyB)
+	tt.Key(0, ui.KeySpace)
+	tt.Key(0, ui.KeySpace)
+	tt.Advance(quickFeedbackDuration)
+	if a.index != 1 {
+		t.Fatalf("timer skipped a question after manual navigation: %d", a.index)
+	}
+}
+
+func TestQuickModeShowsCorrectedWrongQuestionBeforeMovingOn(t *testing.T) {
+	a := newApp()
+	a.quick, a.onlyWrong, a.repeatPractice = true, true, true
+	a.answers["m1"] = response{}
+	a.answers["m2"] = response{}
+	a.answers["m3"] = response{}
+	a.navigate(0)
+	tt := ui.NewTester(a.view, 1450, 800)
+	tt.Key(0, ui.KeyB)
+	tt.Key(0, ui.KeySpace)
+	if q, _ := a.current(); q.ID != "m1" {
+		t.Fatal("corrected question disappeared before feedback", q.ID)
+	}
+	tt.Advance(quickFeedbackDuration)
+	if q, _ := a.current(); q.ID != "m2" {
+		t.Fatal("correction caused next wrong question to be skipped", q.ID)
 	}
 }

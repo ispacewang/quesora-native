@@ -196,7 +196,7 @@ func (a *app) questionToolbar(c *ui.Context, q question) {
 				fn     func()
 			}{
 				{"重新作答", "开启后，做过的题也可重新作答；提交后更新该题记录。关闭后显示上次结果。", a.repeatPractice, historyIcon, a.toggleRepeatPractice},
-				{"随机", "开启后随机排列题目顺序，一轮内不重复；关闭后按原顺序练习。", a.random, shuffleIcon, a.toggleRandom}, {"速刷", "开启后提交答案会自动进入下一题；关闭后停留查看本题结果。", a.quick, zapIcon, a.toggleQuick}, {"打乱", "开启后打乱选择题的选项顺序；关闭后恢复原顺序，正确答案随选项同步。", a.shuffle, shuffleIcon, a.toggleShuffle},
+				{"随机", "开启后随机排列题目顺序，一轮内不重复；关闭后按原顺序练习。", a.random, shuffleIcon, a.toggleRandom}, {"速刷", quickModeHint, a.quick, zapIcon, a.toggleQuick}, {"打乱", "开启后打乱选择题的选项顺序；关闭后恢复原顺序，正确答案随选项同步。", a.shuffle, shuffleIcon, a.toggleShuffle},
 			} {
 				style := outlineButton
 				if mode.active {

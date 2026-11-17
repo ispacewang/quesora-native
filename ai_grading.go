@@ -63,15 +63,5 @@ func (a *app) finishAIAnswer(result aiAnswerResult) {
 		a.aiFailure(errors.New("题目已变更，AI 判题结果未保存"))
 		return
 	}
-	a.answers[q.ID] = r
-	a.saveResponse(q.ID, r)
-	a.savedWrong = false
-	if current, ok := a.current(); ok && current.ID == q.ID {
-		a.attemptAnsweredID = q.ID
-		a.reviewedQuestionID = ""
-		a.notice = ""
-		if a.quick {
-			a.nextQuestion()
-		}
-	}
+	a.recordPracticeAnswer(q, r)
 }

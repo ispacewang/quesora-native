@@ -94,7 +94,7 @@ func TestChromeVersionAndPracticeModeTooltips(t *testing.T) {
 		}
 		for label, tip := range map[string]string{
 			"随机": "开启后随机排列题目顺序，一轮内不重复；关闭后按原顺序练习。",
-			"速刷": "开启后提交答案会自动进入下一题；关闭后停留查看本题结果。",
+			"速刷": quickModeHint,
 			"打乱": "开启后打乱选择题的选项顺序；关闭后恢复原顺序，正确答案随选项同步。",
 		} {
 			r, found := tt.Find(label)

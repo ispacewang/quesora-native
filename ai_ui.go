@@ -49,6 +49,10 @@ func (a *app) aiDialogs(c *ui.Context) {
 			p, _ := providerByID(a.ai.Config.Selected)
 			ui.Icon(c, aiProviderIcon(p.ID)).Size(18, 18)
 			ui.Text(c, p.Name).FontSize(12).TextColor(t.TextMuted)
+			if a.ai.Config.Enabled {
+				control(c, "disable-ai", "关闭 AI", nil, outlineButton, a.toggleAIFeatures).
+					Tooltip("关闭 AI 功能并隐藏入口").Height(28).Disabled(a.aiConfigWriting())
+			}
 		})
 		ui.Row(c).FillWidth().Padding(0, 24, 12).Gap(8).Wrap().Children(func() {
 			for _, tab := range []struct{ ID, Name string }{{"generate", "出题"}, {"diagnose", "学习诊断"}, {"settings", "服务商配置"}} {
