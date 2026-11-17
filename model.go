@@ -6,6 +6,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 	"strings"
+	"time"
 )
 
 // question 是导入、练习、考试和持久化共用的标准题目。
@@ -47,6 +48,8 @@ type app struct {
 	repeatPractice                                                 bool
 	resetPracticeOpen                                              bool
 	attemptAnsweredID, reviewedQuestionID                          string
+	quickFeedbackPending                                           bool
+	quickAdvanceAt                                                 time.Time
 	answerHandle                                                   ui.Handle
 	importantMotion                                                importantMotion
 	exam                                                           *examSession
@@ -100,7 +103,7 @@ func (a *app) visible() []question {
 		}
 		if a.onlyWrong {
 			r, ok := a.answers[q.ID]
-			if !ok || r.Correct {
+			if !ok || r.Correct && q.ID != a.attemptAnsweredID {
 				continue
 			}
 		}
@@ -119,6 +122,7 @@ func (a *app) current() (question, bool) {
 
 // navigate 开始一次新的题目访问，清空临时输入/动画并按重新作答设置恢复旧答案。
 func (a *app) navigate(index int) {
+	a.stopQuickAdvance()
 	if a.ai.Busy && a.ai.Task == "answer" {
 		a.cancelAITask()
 	}
@@ -154,7 +158,7 @@ func (a *app) choose(i int) {
 	a.notice = ""
 }
 
-// submit 拒绝空答案和重复提交，更新每题最近记录，并在速刷模式切到下一题。
+// submit 拒绝空答案和重复提交，更新每题最近记录；速刷先显示判题结果。
 func (a *app) submit() {
 	q, ok := a.current()
 	if !ok {
@@ -171,16 +175,24 @@ func (a *app) submit() {
 		a.submitAIAnswer(q, response{Choice: a.chosen, Text: a.typed, OptionOrder: append([]int(nil), a.displayOptions(q)...)})
 		return
 	}
-	correct := judgeQuestion(q, response{Choice: a.chosen, Text: a.typed})
+	r := response{Choice: a.chosen, Text: a.typed, OptionOrder: append([]int(nil), a.displayOptions(q)...)}
+	r.Correct = judgeQuestion(q, r)
+	a.recordPracticeAnswer(q, r)
+}
+
+// recordPracticeAnswer 共用本地与 AI 判题的提交路径。先确认当前题，避免错题筛选在判对后立即移除它。
+func (a *app) recordPracticeAnswer(q question, r response) {
+	current, ok := a.current()
+	a.answers[q.ID] = r
+	a.saveResponse(q.ID, r)
 	a.savedWrong = false
-	a.answers[q.ID] = response{Choice: a.chosen, Text: a.typed, Correct: correct, OptionOrder: append([]int(nil), a.displayOptions(q)...)}
+	if !ok || current.ID != q.ID {
+		return
+	}
 	a.attemptAnsweredID = q.ID
 	a.reviewedQuestionID = ""
-	a.saveResponse(q.ID, a.answers[q.ID])
-	if a.quick {
-		a.nextQuestion()
-	}
 	a.notice = ""
+	a.quickFeedbackPending = a.quick
 }
 
 // counts 统计当前题库的最近提交结果；未答题不计入正确或错误数量。

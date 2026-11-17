@@ -90,6 +90,36 @@ func settingRow(c *ui.Context, label, description string, active bool, toggle fu
 	})
 }
 
+// aiFeatureSettings puts the global switch ahead of the scrollable learning options.
+func (a *app) aiFeatureSettings(c *ui.Context) {
+	t := c.Theme()
+	ui.Column(c.Key("ai-feature")).FillWidth().Gap(6).Children(func() {
+		ui.Row(c).FillWidth().Gap(8).Wrap().AlignItems(ui.Center).Children(func() {
+			ui.Text(c, "AI 功能（Beta）").FontSize(13).FontWeight(500)
+			ui.Spacer(c)
+			control(c, "ai-config", "配置服务商", nil, ghostButton, func() {
+				if a.exam == nil {
+					a.settingsOpen = false
+					a.openAI("settings")
+				}
+			}).Label("配置AI服务商").Disabled(a.exam != nil || a.ai.Saving || a.aiConfigWriting())
+			label := "开启 AI"
+			if a.ai.Config.Enabled {
+				label = "关闭 AI"
+			}
+			control(c, "ai-toggle", label, nil, outlineButton, a.toggleAIFeatures).
+				Disabled(a.ai.Saving || a.aiConfigWriting())
+		})
+		if a.ai.Task == "toggle" && (a.ai.Busy || a.ai.Error) {
+			color := t.TextMuted
+			if a.ai.Error {
+				color = t.Danger
+			}
+			ui.Text(c, a.ai.Message).FillWidth().FontSize(11).TextColor(color)
+		}
+	})
+}
+
 // settingsDialog 固定底部关闭操作，正文独立滚动，使最小窗口仍可到达全部数据操作。
 func (a *app) settingsDialog(c *ui.Context) {
 	t := c.Theme()
@@ -101,21 +131,14 @@ func (a *app) settingsDialog(c *ui.Context) {
 		})
 		ui.Scroll(c.Key("settings-scroll")).FillWidth().MaxHeight(max(120, height-210)).Children(func() {
 			ui.Column(c).FillWidth().Padding(0, 24, 20).Gap(20).Children(func() {
+				a.aiFeatureSettings(c)
+				line(c)
 				ui.Text(c, "外观与学习").FontSize(11).FontWeight(600).TextColor(t.TextMuted)
 				a.appearanceSettings(c)
 				settingRow(c, "重新作答", "重新进入已答题时隐藏旧答案，提交后更新记录。", a.repeatPractice, a.toggleRepeatPractice)
 				settingRow(c, "随机题序", "本轮随机排列题目，一轮内不重复。", a.random, a.toggleRandom)
-				settingRow(c, "速刷", "提交答案后自动进入下一题。", a.quick, a.toggleQuick)
+				settingRow(c, "速刷", quickModeHint, a.quick, a.toggleQuick)
 				settingRow(c, "打乱选项", "随机调整选择题的选项顺序。", a.shuffle, a.toggleShuffle)
-				line(c)
-				ui.Column(c).FillWidth().Disabled(a.ai.Saving || a.aiConfigWriting()).Children(func() {
-					settingRow(c, "AI 功能（Beta）", "实验功能，默认关闭。关闭会取消请求并清除未保存预览；已有题库和记录保留。", a.ai.Config.Enabled, a.toggleAIFeatures)
-				})
-				ui.Row(c).FillWidth().Gap(12).AlignItems(ui.Center).Children(func() {
-					ui.Text(c, "AI 服务 · Beta").FontSize(13).FontWeight(500)
-					ui.Spacer(c)
-					control(c, "ai-config", "配置服务商", aiSparkIcon, outlineButton, func() { a.settingsOpen = false; a.openAI("settings") }).Label("配置AI服务商")
-				})
 				line(c)
 				a.updateSection(c)
 				line(c)

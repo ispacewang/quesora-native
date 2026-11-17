@@ -247,3 +247,58 @@ func TestAINavigatingCancelsPendingAnswer(t *testing.T) {
 		t.Fatal("late answer changed practice")
 	}
 }
+
+func TestAIDisableFromAssistantPersistsAndHidesEntrypoints(t *testing.T) {
+	a := newApp()
+	a.ai.Config.Enabled = true
+	a.ai.Config.AutoJudge = true
+	a.ai.Path = filepath.Join(t.TempDir(), "ai-settings.bin")
+	updates := make(chan func(), 16)
+	a.dispatch = func(fn func()) { updates <- fn }
+	a.openAI("generate")
+	tt := ui.NewTester(a.view, 800, 500)
+	click(t, tt, "关闭 AI")
+	pumpAI(t, a, updates)
+	tt.Frame()
+	c, e := loadAIConfig(a.ai.Path)
+	if e != nil || c.Enabled || a.ai.Config.Enabled || a.ai.Open {
+		t.Fatal("AI disable not persisted or assistant still open", e)
+	}
+	if _, ok := tt.Find("AI助手"); ok {
+		t.Fatal("AI entry still visible")
+	}
+	if _, ok := tt.Find("AI判题设置"); ok {
+		t.Fatal("AI grading entry still visible")
+	}
+	click(t, tt, "设置")
+	bounds, ok := tt.Find("开启 AI")
+	if !ok || bounds.Y < 0 || bounds.Y+bounds.H > 500 {
+		t.Fatal("AI switch unavailable without scrolling", bounds)
+	}
+}
+
+func TestAIQuickModeShowsGradingResultBeforeAdvancing(t *testing.T) {
+	a := newApp()
+	a.quick = true
+	a.ai.Config.Enabled, a.ai.Config.AutoJudge = true, true
+	profile := a.ai.Config.Profiles[a.ai.Config.Selected]
+	profile.Key = "test-only"
+	a.ai.Config.Profiles[a.ai.Config.Selected] = profile
+	a.ai.Client.Transport = aiTestTransport(func(*http.Request) (*http.Response, error) {
+		return aiReply(200, "{\"choices\":[{\"message\":{\"content\":\"{\\\"correct\\\":true,\\\"explanation\\\":\\\"符合要点\\\"}\"},\"finish_reason\":\"stop\"}]}"), nil
+	})
+	updates := make(chan func(), 16)
+	a.dispatch = func(fn func()) { updates <- fn }
+	tt := ui.NewTester(a.view, 1450, 800)
+	tt.Key(0, ui.KeyB)
+	tt.Key(0, ui.KeySpace)
+	pumpAI(t, a, updates)
+	tt.Frame()
+	if _, ok := tt.Find("回答正确！"); !ok || a.index != 0 {
+		t.Fatal("AI result skipped or missing", a.index, a.ai.Message)
+	}
+	tt.Advance(quickFeedbackDuration)
+	if a.index != 1 || !a.answers["m1"].Correct {
+		t.Fatal("AI result not saved before auto advance")
+	}
+}

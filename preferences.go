@@ -131,6 +131,12 @@ func (a *app) restorePreferences() error {
 	return nil
 }
 
-func (a *app) toggleRandom()  { a.random = !a.random; a.reorder(); a.navigate(0) }
-func (a *app) toggleQuick()   { a.quick = !a.quick; a.persistPreferences() }
+func (a *app) toggleRandom() { a.random = !a.random; a.reorder(); a.navigate(0) }
+func (a *app) toggleQuick() {
+	a.quick = !a.quick
+	if !a.quick {
+		a.stopQuickAdvance()
+	}
+	a.persistPreferences()
+}
 func (a *app) toggleShuffle() { a.shuffle = !a.shuffle; a.prepareOptions(); a.persistPreferences() }

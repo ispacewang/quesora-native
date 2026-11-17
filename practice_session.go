@@ -95,11 +95,18 @@ func (a *app) displayAnswer(q question) string {
 	return letters(mask)
 }
 func (a *app) nextQuestion() {
-	if a.index >= len(a.visible())-1 {
+	visible := a.visible()
+	if a.index >= len(visible)-1 {
+		a.stopQuickAdvance()
 		a.finishOpen = true
 		return
 	}
-	a.navigate(a.index + 1)
+	next := a.index + 1
+	// Leaving a corrected question removes it from the wrong-only list, shifting the successor left.
+	if id := visible[a.index].ID; a.onlyWrong && id == a.attemptAnsweredID && a.answers[id].Correct {
+		next--
+	}
+	a.navigate(next)
 }
 
 // restartCycle 在重新作答模式保留最近记录；普通模式只清空当前题库的练习记录后开启新轮次。
