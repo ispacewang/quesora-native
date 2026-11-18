@@ -52,7 +52,7 @@ const (
 
 func control(c *ui.Context, key, label string, s *ui.SVG, style buttonStyle, fn func()) ui.Element {
 	t := c.Theme()
-	b := ui.ButtonBase(c.Key(key)).Label(label).Height(28).Padding(0, 10).Radius(0).Border(1, t.Border.Alpha(.6)).Background(t.Background).TextColor(t.Text).FontSize(12).FontWeight(500).OnClick(fn)
+	b := ui.ButtonBase(c.Key(key)).Label(label).Height(28).Padding(0, 10).Radius(cornerRadius(c, 28)).Border(1, t.Border.Alpha(.6)).Background(t.Background).TextColor(t.Text).FontSize(12).FontWeight(500).OnClick(fn)
 	if style == primaryButton {
 		b.Background(t.Accent).TextColor(t.AccentText).BorderColor(ui.Transparent)
 	}

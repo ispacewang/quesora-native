@@ -15,7 +15,11 @@ func (a *app) view(c *ui.Context) {
 		a.restoreOpen || a.restoreBusy || a.updates.confirmOpen || a.updates.installing ||
 		a.importOpen || a.deleteOpen || a.helpOpen || a.resetPracticeOpen || a.finishOpen
 	a.updateQuickAdvance(c, practiceBlocked)
-	c.SetTheme(previewTheme(a.dark))
+	theme := previewTheme(a.dark)
+	if a.rounded {
+		theme.Radius = scaledCornerRadius(true, 40)
+	}
+	c.SetTheme(theme)
 	t := c.Theme()
 	w, _ := c.Size()
 	leftVisible, rightVisible := a.visiblePanels(w)
@@ -135,7 +139,7 @@ func (a *app) titlebar(c *ui.Context) {
 				}
 			}},
 		} {
-			b := control(c, v.key, "", v.s, ghostButton, v.fn).Label(v.label).Tooltip(v.label).TextColor(t.Text).Size(46, 44).Padding(15).Background(ui.Transparent)
+			b := control(c, v.key, "", v.s, ghostButton, v.fn).Label(v.label).Tooltip(v.label).TextColor(t.Text).Size(46, 44).Radius(0).Padding(15).Background(ui.Transparent)
 			if b.Hovered() {
 				if v.key == "close-window" {
 					b.Background(t.Danger.Alpha(.7)).TextColor(ui.RGB(255, 255, 255))

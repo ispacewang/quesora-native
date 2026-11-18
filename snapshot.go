@@ -120,6 +120,14 @@ func (a *app) configureScene(scene string) {
 	case "correct":
 		a.choose(1)
 		a.submit()
+	case "mistake-note":
+		a.choose(0)
+		a.submit()
+		q, _ := a.current()
+		r := a.answers[q.ID]
+		r.Note = "先配方成 (x − 1)²，再判断最小值；不要把顶点横坐标当成函数值。"
+		a.answers[q.ID] = r
+		a.store = &questionStore{path: "data/questions.db"}
 	case "wrong":
 		a.choose(0)
 		a.submit()

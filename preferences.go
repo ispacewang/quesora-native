@@ -14,6 +14,7 @@ import (
 type learningPreferences struct {
 	Version                                           int
 	Appearance                                        string
+	Rounded                                           bool
 	Dark, Random, Quick, Shuffle, LeftOpen, RightOpen bool
 	Bank, QuestionID, Filter                          string
 	Filters                                           []string
@@ -22,7 +23,7 @@ type learningPreferences struct {
 
 // preferences 在 UI 线程捕获可序列化值，并排序筛选集合，使去重比较不受 map 迭代顺序影响。
 func (a *app) preferences() learningPreferences {
-	p := learningPreferences{Version: 2, Appearance: a.appearance, Dark: a.dark, Random: a.random, Quick: a.quick, Shuffle: a.shuffle, LeftOpen: a.leftOpen, RightOpen: a.rightOpen, Bank: a.bank, Filter: a.filter, ImportantOnly: a.importantOnly, OnlyWrong: a.onlyWrong}
+	p := learningPreferences{Version: 2, Appearance: a.appearance, Rounded: a.rounded, Dark: a.dark, Random: a.random, Quick: a.quick, Shuffle: a.shuffle, LeftOpen: a.leftOpen, RightOpen: a.rightOpen, Bank: a.bank, Filter: a.filter, ImportantOnly: a.importantOnly, OnlyWrong: a.onlyWrong}
 	if q, ok := a.current(); ok {
 		p.QuestionID = q.ID
 	}
@@ -91,6 +92,7 @@ func (a *app) restorePreferences() error {
 		}
 		a.appearance = p.Appearance
 	}
+	a.rounded = p.Rounded
 	a.dark, a.random, a.quick, a.shuffle = p.Dark, p.Random, p.Quick, p.Shuffle
 	a.leftOpen, a.rightOpen = p.LeftOpen, p.RightOpen
 	a.bank, a.filter = p.Bank, p.Filter

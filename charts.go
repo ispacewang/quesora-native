@@ -10,7 +10,7 @@ import (
 // functionGraph 绘制固定的示例抛物线；Graph 字段不代表已支持任意函数或 JSXGraph。
 func (a *app) functionGraph(c *ui.Context) {
 	t := c.Theme()
-	ui.Box(c.Key("function-graph")).FillWidth().Height(118).Background(t.Surface).Label("函数图像：y 等于 x 减一的平方，顶点为 1，0").Draw(func(p *ui.Painter, r ui.Rect) {
+	ui.Box(c.Key("function-graph")).FillWidth().Height(118).Radius(cornerRadius(c, 118)).Background(t.Surface).Label("函数图像：y 等于 x 减一的平方，顶点为 1，0").Draw(func(p *ui.Painter, r ui.Rect) {
 		left, top := r.X+32, r.Y+12
 		w, h := r.W-64, r.H-26
 		px := func(x float32) float32 { return left + (x+1)*w/4 }

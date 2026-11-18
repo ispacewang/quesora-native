@@ -31,7 +31,7 @@ var aiSparkIcon = svgIcon(`<path d="m12 3 2.8 6.2L21 12l-6.2 2.8L12 21l-2.8-6.2L
 func aiField(c *ui.Context, label string, value *string, password bool) {
 	ui.Column(c.Key(label)).FillWidth().Gap(6).Children(func() {
 		ui.Text(c, label).FontSize(12).FontWeight(500)
-		input := ui.TextInput(c.Key("input"), value).Label(label).FillWidth().Height(36).Radius(0).FontSize(13)
+		input := ui.TextInput(c.Key("input"), value).Label(label).FillWidth().Height(36).Radius(cornerRadius(c, 36)).FontSize(13)
 		if password {
 			input.Password()
 		}
@@ -128,7 +128,7 @@ func (a *app) aiSettingsBody(c *ui.Context) {
 	ui.Text(c, "选择服务商").FontSize(12).FontWeight(500)
 	ui.Grid(c.Key("ai-providers")).FillWidth().Columns(5).Gap(8).Children(func() {
 		for _, p := range aiProviders {
-			box := ui.ButtonBase(c.Key(p.ID)).Label("AI服务商："+p.Name).MinWidth(0).Height(72).Border(1, t.Border).Background(t.Background).OnClick(func() { a.selectAIProvider(p.ID) })
+			box := ui.ButtonBase(c.Key(p.ID)).Label("AI服务商："+p.Name).MinWidth(0).Height(72).Radius(cornerRadius(c, 72)).Border(1, t.Border).Background(t.Background).OnClick(func() { a.selectAIProvider(p.ID) })
 			if p.ID == a.ai.EditorProvider {
 				box.BorderColor(t.Accent).Background(t.Accent.Alpha(.06))
 			}
@@ -159,7 +159,7 @@ func (a *app) aiSettingsBody(c *ui.Context) {
 func (a *app) aiGenerationProviderSelect(c *ui.Context) {
 	t := c.Theme()
 	sel := ui.SelectBase(c.Key("generation-provider"), &a.ai.Config.Selected)
-	trigger := sel.Trigger.Label("选择出题服务商").FillWidth().MinWidth(0).Height(36).Padding(0, 12).Border(1, t.Border).Background(t.Background).Radius(0).OnChange(func() { a.selectAIGenerationProvider(a.ai.Config.Selected) })
+	trigger := sel.Trigger.Label("选择出题服务商").FillWidth().MinWidth(0).Height(36).Padding(0, 12).Border(1, t.Border).Background(t.Background).Radius(cornerRadius(c, 36)).OnChange(func() { a.selectAIGenerationProvider(a.ai.Config.Selected) })
 	if trigger.Hovered() {
 		trigger.BorderColor(t.TextMuted.Alpha(.5))
 	}
@@ -175,7 +175,7 @@ func (a *app) aiGenerationProviderSelect(c *ui.Context) {
 		})
 	})
 	sel.Popup(func(panel ui.Element) {
-		panel.Padding(4).Border(1, t.Border).Radius(0).Background(t.Background).Shadow(0, 4, 12, 0, ui.RGBA(0, 0, 0, .12))
+		panel.Padding(4).Border(1, t.Border).Radius(cornerRadius(c, 80)).Clip().Background(t.Background).Shadow(0, 4, 12, 0, ui.RGBA(0, 0, 0, .12))
 		ui.Scroll(c).FillWidth().MaxHeight(220).Children(func() {
 			for _, p := range aiProviders {
 				item := sel.Item(p.ID).Label("出题服务商："+p.Name).FillWidth().Padding(8, 10)
@@ -237,7 +237,7 @@ func (a *app) aiGenerateBody(c *ui.Context) {
 	if a.ai.MaterialName != "" {
 		ui.Text(c, a.ai.MaterialName).FillWidth().FontSize(11).TextColor(t.Accent)
 	}
-	ui.TextArea(c.Key("ai-material"), &a.ai.Material).Label("AI参考资料正文").FillWidth().Height(110).FontSize(12).Radius(0).Placeholder("可粘贴资料，或添加 TXT、Markdown、CSV、Excel、DOCX、文本 PDF（16 MiB / 60000 字以内）")
+	ui.TextArea(c.Key("ai-material"), &a.ai.Material).Label("AI参考资料正文").FillWidth().Height(110).FontSize(12).Radius(cornerRadius(c, 80)).Placeholder("可粘贴资料，或添加 TXT、Markdown、CSV、Excel、DOCX、文本 PDF（16 MiB / 60000 字以内）")
 	ui.Text(c, "点击生成后，主题和参考资料将发送至当前服务商，可能产生费用。生成结果先预览，确认保存后才会写入题库。").FillWidth().FontSize(11).LineHeight(1.6).TextColor(t.TextMuted)
 }
 func (a *app) aiPreviewBody(c *ui.Context) {
@@ -252,7 +252,7 @@ func (a *app) aiPreviewBody(c *ui.Context) {
 	})
 	ui.Text(c, q.Prompt).FillWidth().FontSize(15).FontWeight(600).LineHeight(1.6)
 	for i, opt := range q.Options {
-		ui.Text(c, fmt.Sprintf("%c. %s", 'A'+i, opt)).FillWidth().FontSize(13).Padding(8, 12).Background(t.Surface)
+		ui.Text(c, fmt.Sprintf("%c. %s", 'A'+i, opt)).FillWidth().FontSize(13).Padding(8, 12).Radius(cornerRadius(c, 36)).Background(t.Surface)
 	}
 	ans := q.TextAnswer
 	if !isTextQuestion(q) {

@@ -16,6 +16,7 @@ import (
 func main() {
 	snapshot := flag.String("snapshot", "", "render a preview PNG")
 	dark := flag.Bool("dark", false, "dark appearance")
+	rounded := flag.Bool("rounded", false, "rounded appearance in snapshots")
 	showUpload := flag.Bool("show-upload", false, "open upload dialog")
 	dataDir := flag.String("data-dir", "", "directory for native question data")
 	scene := flag.String("scene", "single", "preview scenario")
@@ -36,12 +37,18 @@ func main() {
 	}
 	a.importOpen = *showUpload
 	if *snapshot != "" {
+		a.rounded = *rounded
 		a.configureScene(*scene)
 		f, err := os.Create(*snapshot)
 		if err != nil {
 			log.Fatal(err)
 		}
-		if err = png.Encode(f, ui.Render(a.view, 1450, 800, 1)); err != nil {
+		preview := ui.NewTester(a.view, 1450, 800)
+		if *scene == "mistake-note" {
+			// Show the note editor below the result, without touching real user data.
+			preview.Scroll(700, 600, 0, 800)
+		}
+		if err = png.Encode(f, preview.Image()); err != nil {
 			log.Fatal(err)
 		}
 		if err = f.Close(); err != nil {

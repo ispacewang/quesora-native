@@ -16,7 +16,8 @@ func (a *app) panelToggle(c *ui.Context, left bool) {
 	if left {
 		key, label, open = "toggle-stats", "统计", leftVisible
 	}
-	button := ui.ButtonBase(c.Key(key)).Height(34).Padding(8, 12).Border(1, t.Border.Alpha(.6)).Background(ui.Transparent).Shadow(0, 2, 4, 0, ui.RGBA(0, 0, 0, .08)).OnClick(func() {
+	radius := cornerRadius(c, 34)
+	button := ui.ButtonBase(c.Key(key)).Height(34).Radius(radius).Padding(8, 12).Border(1, t.Border.Alpha(.6)).Background(ui.Transparent).Shadow(0, 2, 4, 0, ui.RGBA(0, 0, 0, .08)).OnClick(func() {
 		a.togglePanel(width, left)
 	})
 	if left {
@@ -35,7 +36,8 @@ func (a *app) panelToggle(c *ui.Context, left bool) {
 		tint = t.Surface.Alpha(.9)
 	}
 	button.Draw(func(p *ui.Painter, r ui.Rect) {
-		paintFrostedSurface(p, ui.Rect{X: r.X + 1, Y: r.Y + 1, W: r.W - 2, H: r.H - 2}, tint)
+		surface := ui.Rect{X: r.X + 1, Y: r.Y + 1, W: r.W - 2, H: r.H - 2}
+		p.Clip(surface, max(0, radius-1), func() { paintFrostedSurface(p, surface, tint) })
 	})
 	button.Children(func() {
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {

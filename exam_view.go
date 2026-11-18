@@ -99,7 +99,7 @@ func (a *app) examView(c *ui.Context) {
 											fg = t.AccentText
 											border = t.Accent
 										}
-										ui.ButtonBase(c.Key(fmt.Sprint(idx))).Label(fmt.Sprintf("考试第%d题", idx+1)).Size(28, 28).Border(1, border).Background(bg).OnClick(func() { e.Current = idx; e.preview = false; a.examMessage = "" }).Center().Children(func() {
+										ui.ButtonBase(c.Key(fmt.Sprint(idx))).Label(fmt.Sprintf("考试第%d题", idx+1)).Size(28, 28).Radius(cornerRadius(c, 28)).Border(1, border).Background(bg).OnClick(func() { e.Current = idx; e.preview = false; a.examMessage = "" }).Center().Children(func() {
 											ui.Text(c, fmt.Sprint(idx+1)).FontSize(11).TextColor(fg)
 											if e.Important[idx] {
 												img := importantShield
@@ -136,13 +136,13 @@ func (a *app) examQuestion(c *ui.Context, e *examSession) {
 	ui.Column(c.Key("exam-question"+q.ID)).FillWidth().MaxWidth(740).AlignSelf(ui.Center).Padding(32, 28).Children(func() {
 		ui.Row(c).FillWidth().Gap(8).AlignItems(ui.Center).Wrap().Margin(0, 0, 24, 0).Children(func() {
 			ui.Text(c, fmt.Sprintf("第 %d 题", idx+1)).FontSize(16).FontWeight(600).TextColor(t.Accent)
-			ui.Text(c, q.Kind).FontSize(12).Padding(2, 10).Background(t.Accent).TextColor(t.AccentText)
+			ui.Text(c, q.Kind).FontSize(12).Padding(2, 10).Radius(cornerRadius(c, 22)).Background(t.Accent).TextColor(t.AccentText)
 			if e.Important[idx] {
-				ui.Text(c, "重要题目").FontSize(12).Padding(2, 10).Background(t.Danger).TextColor(t.AccentText)
+				ui.Text(c, "重要题目").FontSize(12).Padding(2, 10).Radius(cornerRadius(c, 22)).Background(t.Danger).TextColor(t.AccentText)
 			}
 			for _, key := range []string{"题目分类", "一级纲要"} {
 				if text, _ := q.Meta[key].(string); text != "" {
-					ui.Text(c, text).FontSize(12).Padding(2, 8).Background(t.Surface)
+					ui.Text(c, text).FontSize(12).Padding(2, 8).Radius(cornerRadius(c, 22)).Background(t.Surface)
 				}
 			}
 			ui.Spacer(c)
@@ -159,12 +159,12 @@ func (a *app) examQuestion(c *ui.Context, e *examSession) {
 				ui.Spacer(c)
 				control(c, "preview", "预览", eyeIcon, ghostButton, func() { e.preview = !e.preview })
 			})
-			ui.TextArea(c.Key("exam-text"), &r.Text).Label("考试填写答案").FillWidth().Height(110).FontSize(14).LineHeight(1.5).Padding(8, 12).Radius(0).Placeholder("输入你的答案...").Background(t.Background).Border(1, t.Border)
+			ui.TextArea(c.Key("exam-text"), &r.Text).Label("考试填写答案").FillWidth().Height(110).FontSize(14).LineHeight(1.5).Padding(8, 12).Radius(cornerRadius(c, 80)).Placeholder("输入你的答案...").Background(t.Background).Border(1, t.Border)
 			if e.preview {
-				ui.Text(c, r.Text).FillWidth().Padding(12).LineHeight(1.625).Border(1, t.Border).Margin(8, 0, 0, 0)
+				ui.Text(c, r.Text).FillWidth().Radius(cornerRadius(c, 80)).Padding(12).LineHeight(1.625).Border(1, t.Border).Margin(8, 0, 0, 0)
 			}
 		} else {
-			ui.Column(c.Key("exam-options")).FillWidth().Padding(1).Gap(8).Border(1, t.Border.Alpha(.5)).Children(func() {
+			ui.Column(c.Key("exam-options")).FillWidth().Radius(cornerRadius(c, 80)).Padding(1).Gap(8).Border(1, t.Border.Alpha(.5)).Children(func() {
 				for display, original := range responseOrder(q, *r) {
 					selected := r.Choice&(1<<original) != 0
 					border, bg, fg := t.Border.Alpha(.5), t.Background, t.TextMuted
@@ -173,14 +173,14 @@ func (a *app) examQuestion(c *ui.Context, e *examSession) {
 						bg = t.Accent.Alpha(.05)
 						fg = t.Accent
 					}
-					ui.ButtonBase(c.Key(fmt.Sprint(display))).Label(fmt.Sprintf("考试选项%c. %s", rune('A'+display), q.Options[original])).FillWidth().MinHeight(46).Padding(10, 14).Background(bg).Border(1, border).OnClick(func() { e.choose(original); a.examMessage = "" }).Children(func() {
+					ui.ButtonBase(c.Key(fmt.Sprint(display))).Label(fmt.Sprintf("考试选项%c. %s", rune('A'+display), q.Options[original])).FillWidth().MinHeight(46).Padding(10, 14).Radius(cornerRadius(c, 46)).Background(bg).Border(1, border).OnClick(func() { e.choose(original); a.examMessage = "" }).Children(func() {
 						ui.Row(c).FillWidth().Gap(12).AlignItems(ui.Start).Children(func() {
 							lb, lf := ui.Transparent, t.TextMuted
 							if selected {
 								lb = t.Accent
 								lf = t.AccentText
 							}
-							ui.Box(c).Size(24, 24).Shrink(0).Border(1, border).Background(lb).Center().Children(func() { ui.Text(c, string(rune('A'+display))).FontSize(12).FontWeight(600).TextColor(lf) })
+							ui.Box(c).Size(24, 24).Shrink(0).Radius(cornerRadius(c, 24)).Border(1, border).Background(lb).Center().Children(func() { ui.Text(c, string(rune('A'+display))).FontSize(12).FontWeight(600).TextColor(lf) })
 							ui.Text(c, q.Options[original]).Grow(1).MinWidth(0).FontSize(14).LineHeight(1.625).TextColor(fg).Margin(2, 0, 0, 0)
 						})
 					})
@@ -300,7 +300,7 @@ func reviewQuestion(c *ui.Context, q question, r response, important bool, index
 	if important {
 		border = t.Danger.Alpha(.7)
 	}
-	ui.Column(c).FillWidth().Padding(16).Gap(12).Border(1, border).Children(func() {
+	ui.Column(c).FillWidth().Radius(cornerRadius(c, 100)).Padding(16).Gap(12).Border(1, border).Children(func() {
 		ui.Row(c).Gap(6).Wrap().Children(func() {
 			ui.Text(c, fmt.Sprintf("%d · %s", index, q.Kind)).FontSize(11).TextColor(t.TextMuted)
 			if important {
@@ -331,6 +331,7 @@ func reviewQuestion(c *ui.Context, q question, r response, important bool, index
 		if q.Explanation != "" {
 			ui.Text(c, "解析："+q.Explanation).FillWidth().FontSize(12).LineHeight(1.6).TextColor(t.TextMuted)
 		}
+		mistakeNoteSummary(c, r.Note)
 	})
 }
 func resultWidth(e *examSession) float32 {
@@ -367,7 +368,7 @@ func (a *app) historyView(c *ui.Context) {
 	_, h := c.Size()
 	ui.DialogBase(c.Key("history-drawer"), &a.historyOpen, func(back, panel ui.Element) {
 		back.Top(titleHeight).Background(ui.RGBA(0, 0, 0, .1))
-		panel.Label("我的记录面板").Absolute().Top(0).Right(0).Width(380).Height(max(0, h-titleHeight)).Padding(0).Radius(0).Background(t.Background).BorderWidth(0, 0, 0, 1).BorderColor(t.Border).Shadow(-6, 0, 20, 0, ui.RGBA(0, 0, 0, .1)).Children(func() {
+		panel.Label("我的记录面板").Absolute().Top(0).Right(0).Width(380).Height(max(0, h-titleHeight)).Padding(0).Radius(cornerRadius(c, 120), 0, 0, cornerRadius(c, 120)).Clip().Background(t.Background).BorderWidth(0, 0, 0, 1).BorderColor(t.Border).Shadow(-6, 0, 20, 0, ui.RGBA(0, 0, 0, .1)).Children(func() {
 			ui.Row(c).FillWidth().Padding(16, 20).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Border.Alpha(.5)).Children(func() {
 				ui.Icon(c, historyIcon).Size(14, 14).TextColor(t.Accent)
 				ui.Text(c, "我的记录").FontSize(14).FontWeight(600)
@@ -414,7 +415,7 @@ func (a *app) historyView(c *ui.Context) {
 								border = t.Accent.Alpha(.3)
 								bg = t.Accent.Alpha(.02)
 							}
-							ui.Column(c.Key(record.Key)).FillWidth().Border(1, border).Background(bg).Children(func() {
+							ui.Column(c.Key(record.Key)).FillWidth().Radius(cornerRadius(c, 80)).Clip().Border(1, border).Background(bg).Children(func() {
 								ui.Row(c).FillWidth().Padding(16).Gap(6).AlignItems(ui.Center).Children(func() {
 									ui.ButtonBase(c.Key("expand")).Label("展开记录：" + record.Key).Grow(1).MinWidth(0).OnClick(func() {
 										if a.historyExpanded == record.Key {
