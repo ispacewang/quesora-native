@@ -20,6 +20,8 @@ question.Answer 和 response.Choice 的第 i 位表示原始 Options[i]。Option
 
 app 字段在 UI 线程修改。后台先捕获不可变数据或持久服务，磁盘操作交给 libraryJobs，结果经 publish 返回。不要捕获跨帧 ui.Element；构建可能在同一帧重复执行，因此渲染函数不得无条件发起 I/O。数据库单连接使用时，查询游标必须关闭再发起下一次查询。
 
+错题备注由 mistake_notes.go 管理，复用 response.Note 与 practice JSON。备注写入只更新该字段；答题更新保留数据库中的备注，避免队列等待期间的旧作答覆盖新笔记。UI 仅在保存成功后发布备注；practiceRevision 拦截重置／恢复后的旧回调。历史错题本捕获完整 response，后续编辑不改变已保存快照。
+
 ## 解析规则扩展
 
 先添加最小 CSV/XLSX 回归样例，说明原始单元格、期望标准题型/选项/答案和警告行。表头别名在 headerField，顶部说明在 schemaAt，答案解释在 normalizedChoice。增加规则前检查“选项序号”和“选项内容”同时合法但含义不同的情况，优先采用用户表格的显式说明。保持导入源文件只读。
@@ -52,7 +54,7 @@ resources/icon-design.json 记录图标导出参数。qa/icons 使用用户提�
 
 AI 维护边界：ai_provider.go 绑定五厂商官方 HTTPS 来源，禁止认证请求重定向，不记录服务原始错误或密钥；ai_config.go/ai_secret_windows.go 独立加密配置。ai_state.go 用任务世代拒绝取消后的迟到响应，短暂的配置原子写入不能取消。ai_tasks.go 先完整预览再事务入库，ai_grading.go 只更新练习记录，考试保持本地评分。Beta 默认关闭并在每个网络任务入口检查。
 
-appearance.go 将持久化外观选择与实时 dark 配色分开，MyGo OnUpdated 在 UI 线程同步系统变化，窗口关闭解除监听；学习设置版本 2 保留版本 1 的浅/深色选择。MyGo 固定 v0.7.4，升级前阅读其迁移指南并运行 migrate-ui 预览、mygo vet 和全部测试。
+appearance.go 将持久化外观选择与实时 dark 配色分开，MyGo OnUpdated 在 UI 线程同步系统变化，窗口关闭解除监听；学习设置版本 2 保留版本 1 的浅/深色选择。MyGo 固定 v0.10.0，升级前阅读其迁移指南并运行 migrate-ui 预览、mygo vet 和全部测试。
 
 Windows 图标缓存：安装器给桌面/开始菜单快捷方式指定 icons/quesora-<version>.ico 并通知 Shell 刷新，不能只覆盖同一路径 EXE 后期待缓存失效。运行窗口创建后用 SetIcon 设置完整题卡 PNG；不修改用户原图或用简化 Q 替代小尺寸。qa/installer_smoke.py 在临时 runner 验证真实快捷方式的 IconLocation 和 ICO 内容，不在开发机安装/重装。
 
