@@ -65,7 +65,12 @@ func TestWrongBookSaveDoesNotClaimChangedOrOtherBank(t *testing.T) {
 func TestEmptyWrongBookButtonsDoNothing(t *testing.T) {
 	a := newApp()
 	tt := ui.NewTester(a.view, 1450, 800)
-	click(t, tt, "导出错题 ▾")
+	r, ok := tt.Find("导出错题 ▾")
+	if !ok {
+		t.Fatal("export control missing")
+	}
+	// Named clicks now require an enabled input target in MyGo 0.10.
+	tt.ClickAt(r.X+r.W/2, r.Y+r.H/2)
 	if a.exportOpen {
 		t.Fatal("empty wrong export opened")
 	}
