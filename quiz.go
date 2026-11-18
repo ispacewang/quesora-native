@@ -142,12 +142,12 @@ func (a *app) questionToolbar(c *ui.Context, q question) {
 	}
 	ui.Column(c.Key("question-heading")).Label("刷题工具栏").FillWidth().Gap(12).Padding(0, 0, 16, 0).Margin(0, 0, 20, 0).BorderWidth(0, 0, 1, 0).BorderColor(t.Border.Alpha(.5)).Children(func() {
 		ui.Row(c).FillWidth().Gap(8).Wrap().AlignItems(ui.Center).Children(func() {
-			ui.Text(c, q.Kind).FontSize(12).FontWeight(600).Padding(2, 10).Background(t.Accent).TextColor(t.AccentText)
+			ui.Text(c, q.Kind).FontSize(12).FontWeight(600).Padding(2, 10).Radius(cornerRadius(c, 22)).Background(t.Accent).TextColor(t.AccentText)
 			if a.starred[q.ID] {
-				ui.Text(c, "重要题目").FontSize(12).Padding(2, 10).Background(t.Danger).TextColor(t.AccentText)
+				ui.Text(c, "重要题目").FontSize(12).Padding(2, 10).Radius(cornerRadius(c, 22)).Background(t.Danger).TextColor(t.AccentText)
 			}
 			if name, _ := q.Meta["题目分类"].(string); name != "" {
-				ui.Text(c, name).FontSize(12).MaxWidth(200).SingleLine().Padding(2, 10).Background(t.Surface)
+				ui.Text(c, name).FontSize(12).MaxWidth(200).SingleLine().Padding(2, 10).Radius(cornerRadius(c, 22)).Background(t.Surface)
 			}
 			ui.Spacer(c)
 			ui.Text(c, fmt.Sprintf("%d / %d", a.index+1, len(a.visible()))).Label("当前题目进度").FontSize(12).TextColor(t.TextMuted)
@@ -169,7 +169,7 @@ func (a *app) questionToolbar(c *ui.Context, q question) {
 				if kind == "重要" {
 					active = a.importantOnly
 				}
-				button := ui.ButtonBase(c.Key("filter-"+kind)).Label("筛选"+kind).Height(26).Padding(2, 6).Shrink(0).Border(1, ui.Transparent).TextColor(t.TextMuted).OnClick(func() { a.toggleFilter(kind) })
+				button := ui.ButtonBase(c.Key("filter-"+kind)).Label("筛选"+kind).Height(26).Radius(cornerRadius(c, 26)).Padding(2, 6).Shrink(0).Border(1, ui.Transparent).TextColor(t.TextMuted).OnClick(func() { a.toggleFilter(kind) })
 				if active {
 					button.BorderColor(t.Accent.Alpha(.4)).Background(t.Accent.Alpha(.08)).TextColor(t.Accent)
 				}
@@ -239,7 +239,7 @@ func (a *app) option(c *ui.Context, q question, display, original int, done bool
 		}
 	}
 	label := fmt.Sprintf("%c. %s", rune('A'+display), q.Options[original])
-	b := ui.ButtonBase(c.Key(fmt.Sprintf("option-%s-%d", q.ID, display))).Label(label).FillWidth().MinHeight(50).Padding(12, 14).Border(1, border).Background(bg).Disabled(done).OnClick(func() { a.choose(original) })
+	b := ui.ButtonBase(c.Key(fmt.Sprintf("option-%s-%d", q.ID, display))).Label(label).FillWidth().MinHeight(50).Radius(cornerRadius(c, 50)).Padding(12, 14).Border(1, border).Background(bg).Disabled(done).OnClick(func() { a.choose(original) })
 	if b.Hovered() && !done && !selected {
 		b.BorderColor(t.Accent.Alpha(.4)).Background(t.Accent.Alpha(.02))
 	}
@@ -249,7 +249,7 @@ func (a *app) option(c *ui.Context, q question, display, original int, done bool
 			if selected || done && correct {
 				lc = letterBG
 			}
-			ui.Box(c).Size(24, 24).Shrink(0).Border(1, lc).Background(letterBG).Center().Children(func() { ui.Text(c, string(rune('A'+display))).FontSize(12).FontWeight(600).TextColor(letterFG) })
+			ui.Box(c).Size(24, 24).Shrink(0).Radius(cornerRadius(c, 24)).Border(1, lc).Background(letterBG).Center().Children(func() { ui.Text(c, string(rune('A'+display))).FontSize(12).FontWeight(600).TextColor(letterFG) })
 			ui.Text(c, q.Options[original]).FontSize(14).LineHeight(1.625).TextColor(fg).Grow(1).MinWidth(0).Margin(2, 0, 0, 0)
 			if resultIcon != nil {
 				color := t.Success
@@ -272,7 +272,7 @@ func (a *app) textAnswer(c *ui.Context, q question, done bool) {
 	if q.Kind == "填空题" {
 		placeholder = "输入正确答案..."
 	}
-	ui.TextArea(c.Key("answer-"+q.ID), &a.typed).Label("填写答案").Bind(&a.answerHandle).Placeholder(placeholder).FillWidth().Height(110).FontSize(14).LineHeight(1.5).Padding(8, 12).Radius(0).Border(1, t.Border).Background(t.Background).Disabled(done)
+	ui.TextArea(c.Key("answer-"+q.ID), &a.typed).Label("填写答案").Bind(&a.answerHandle).Placeholder(placeholder).FillWidth().Height(110).FontSize(14).LineHeight(1.5).Padding(8, 12).Radius(cornerRadius(c, 80)).Border(1, t.Border).Background(t.Background).Disabled(done)
 	if a.showPreview && a.typed != "" {
 		ui.Text(c, a.typed).FillWidth().FontSize(14).LineHeight(1.625).Padding(12).Border(1, t.Border.Alpha(.5)).Background(t.Surface.Alpha(.3))
 	}
@@ -288,7 +288,7 @@ func (a *app) answerFeedback(c *ui.Context, q question, r response) {
 		label = "回答正确！"
 	}
 	ui.Column(c.Key("feedback")).FillWidth().Gap(12).Margin(20, 0, 0, 0).Children(func() {
-		ui.Row(c).FillWidth().Padding(12, 16).Gap(8).AlignItems(ui.Center).Background(color.Alpha(.06)).BorderWidth(0, 0, 0, 3).BorderColor(color).Children(func() {
+		ui.Row(c).FillWidth().Padding(12, 16).Gap(8).AlignItems(ui.Center).Radius(cornerRadius(c, 44)).Background(color.Alpha(.06)).BorderWidth(0, 0, 0, 3).BorderColor(color).Children(func() {
 			ui.Icon(c, symbol).Size(16, 16).TextColor(color)
 			ui.Text(c, label).FontSize(14).FontWeight(500).TextColor(color)
 		})
@@ -302,7 +302,7 @@ func (a *app) answerFeedback(c *ui.Context, q question, r response) {
 			ui.Text(c, "AI 复核："+r.AIExplanation).FillWidth().FontSize(13).LineHeight(1.6).TextColor(t.TextMuted)
 		}
 		if q.Explanation != "" {
-			ui.Column(c.Key("explanation")).FillWidth().Padding(16).Gap(4).Background(t.Surface.Alpha(.5)).Children(func() {
+			ui.Column(c.Key("explanation")).FillWidth().Radius(cornerRadius(c, 80)).Padding(16).Gap(4).Background(t.Surface.Alpha(.5)).Children(func() {
 				ui.Text(c, "解析").FontSize(10).FontWeight(600).TextColor(t.TextMuted)
 				ui.Text(c, q.Explanation).FontSize(14).LineHeight(1.625).FillWidth()
 			})

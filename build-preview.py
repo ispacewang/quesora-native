@@ -84,6 +84,12 @@ def build(stage, distribution, version, env, installer=False, iscc=None):
               ("history-dark", ["-scene", "history", "-dark"]),
               ("mistake-note-dark", ["-scene", "mistake-note", "-dark"]),
               ("settings-dark", ["-scene", "settings", "-dark"]), ("ai-settings-dark", ["-scene", "ai-settings", "-dark"])]
+    scenes += [("rounded", ["-rounded"]), ("rounded-dark", ["-rounded", "-dark"]),
+               ("settings-rounded", ["-scene", "settings", "-rounded"]),
+               ("settings-rounded-dark", ["-scene", "settings", "-rounded", "-dark"]),
+               ("exam-setup-rounded", ["-scene", "exam-setup", "-rounded"]),
+               ("ai-generate-rounded", ["-scene", "ai-generate", "-rounded"]),
+               ("mistake-note-rounded", ["-scene", "mistake-note", "-rounded"])]
     scenes += [(name, ["-scene", name]) for name in SCENES]
     for name, args in scenes:
         run([executable, "-snapshot", out / ("preview-" + name + ".png"), *args], stage, env)

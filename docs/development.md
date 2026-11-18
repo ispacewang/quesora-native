@@ -22,6 +22,8 @@ app 字段在 UI 线程修改。后台先捕获不可变数据或持久服务，
 
 错题备注由 mistake_notes.go 管理，复用 response.Note 与 practice JSON。备注写入只更新该字段；答题更新保留数据库中的备注，避免队列等待期间的旧作答覆盖新笔记。UI 仅在保存成功后发布备注；practiceRevision 拦截重置／恢复后的旧回调。历史错题本捕获完整 response，后续编辑不改变已保存快照。
 
+corners.go 保存独立的 Rounded 外观偏好，默认 false，兼容旧版 learning-preferences。cornerRadius 按组件标称短边计算半径并封顶 16 DIP；小标签、控件、卡片和模态窗口分别传入自身尺寸。圆形状态图案和 Windows 标题栏控件保持其语义形状；磨砂绘制在相同半径内裁切，避免矩形着色溢出。
+
 ## 解析规则扩展
 
 先添加最小 CSV/XLSX 回归样例，说明原始单元格、期望标准题型/选项/答案和警告行。表头别名在 headerField，顶部说明在 schemaAt，答案解释在 normalizedChoice。增加规则前检查“选项序号”和“选项内容”同时合法但含义不同的情况，优先采用用户表格的显式说明。保持导入源文件只读。

@@ -92,7 +92,7 @@ func (a *app) examSetupDialog(c *ui.Context) {
 func (a *app) examBankSelect(c *ui.Context) {
 	t := c.Theme()
 	sel := ui.SelectBase(c.Key("exam-bank"), &a.examForm.Bank)
-	trigger := sel.Trigger.OnChange(a.examFormEdited).Label("考试题库").FillWidth().MinWidth(0).Height(38).Padding(0, 12).Border(1, t.Border).Background(t.Background).Radius(0)
+	trigger := sel.Trigger.OnChange(a.examFormEdited).Label("考试题库").FillWidth().MinWidth(0).Height(38).Padding(0, 12).Border(1, t.Border).Background(t.Background).Radius(cornerRadius(c, 38))
 	if trigger.Hovered() {
 		trigger.BorderColor(t.TextMuted.Alpha(.5))
 	}
@@ -112,7 +112,7 @@ func (a *app) examBankSelect(c *ui.Context) {
 		})
 	})
 	sel.Popup(func(panel ui.Element) {
-		panel.Padding(4).Border(1, t.Border).Radius(0).Background(t.Background).Shadow(0, 4, 12, 0, ui.RGBA(0, 0, 0, .12))
+		panel.Padding(4).Border(1, t.Border).Radius(cornerRadius(c, 80)).Clip().Background(t.Background).Shadow(0, 4, 12, 0, ui.RGBA(0, 0, 0, .12))
 		ui.Scroll(c).FillWidth().MaxHeight(200).Children(func() {
 			for _, bank := range a.bankNames() {
 				item := sel.Item(bank).Label("选择考试题库："+bank).FillWidth().Padding(8, 10)
@@ -163,7 +163,7 @@ func examInteger(text string, lo, hi float64) float64 {
 // examNumberField 绑定持久编辑状态，允许临时无效文本，并将统一校验留给组卷操作。
 func examNumberField(c *ui.Context, label string, value *float64, lo, hi float64, suffix string, onEdit func()) {
 	t := c.Theme()
-	row := ui.Row(c).Label(label+"输入框").FillWidth().MinWidth(0).Height(36).Padding(0, 10).Gap(8).AlignItems(ui.Center).Border(1, t.Border).Background(t.Background)
+	row := ui.Row(c).Label(label+"输入框").FillWidth().MinWidth(0).Height(36).Radius(cornerRadius(c, 36)).Padding(0, 10).Gap(8).AlignItems(ui.Center).Border(1, t.Border).Background(t.Background)
 	edit := ui.Local(row, "edit", func() examNumberEdit {
 		return examNumberEdit{Text: strconv.FormatFloat(*value, 'f', 0, 64), Value: *value}
 	})

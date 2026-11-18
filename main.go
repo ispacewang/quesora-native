@@ -16,6 +16,7 @@ import (
 func main() {
 	snapshot := flag.String("snapshot", "", "render a preview PNG")
 	dark := flag.Bool("dark", false, "dark appearance")
+	rounded := flag.Bool("rounded", false, "rounded appearance in snapshots")
 	showUpload := flag.Bool("show-upload", false, "open upload dialog")
 	dataDir := flag.String("data-dir", "", "directory for native question data")
 	scene := flag.String("scene", "single", "preview scenario")
@@ -36,6 +37,7 @@ func main() {
 	}
 	a.importOpen = *showUpload
 	if *snapshot != "" {
+		a.rounded = *rounded
 		a.configureScene(*scene)
 		f, err := os.Create(*snapshot)
 		if err != nil {

@@ -19,7 +19,7 @@ func (a *app) libraryDialogs(c *ui.Context) {
 				ui.Text(c, "支持 Excel/CSV，多 sheet 分别生成题库。自动识别表头、顶部说明、分列选项和五种题型；无法确定的数据会提示来源行。 ")
 				ui.Text(c, "题库模板").TextColor(t.Accent).Underline().Label("题库模板").Focusable().Disabled(a.importBusy).OnClick(a.saveTemplate)
 			})
-			zone := ui.ButtonBase(c.Key("import-drop")).Label("选择题库文件").FillWidth().Padding(32, 16).Border(2, t.Border).BorderStyle(ui.BorderDashed).Center().Disabled(a.importBusy).OnClick(a.pickQuestionFile)
+			zone := ui.ButtonBase(c.Key("import-drop")).Label("选择题库文件").FillWidth().Padding(32, 16).Radius(cornerRadius(c, 100)).Border(2, t.Border).BorderStyle(ui.BorderDashed).Center().Disabled(a.importBusy).OnClick(a.pickQuestionFile)
 			if zone.Hovered() || zone.FileDragOver() {
 				zone.BorderColor(t.Accent.Alpha(.5)).Background(t.Accent.Alpha(.05))
 			}
@@ -53,7 +53,7 @@ func (a *app) libraryDialogs(c *ui.Context) {
 			})
 		})
 		dialogClose(c, "close-import-x", &a.importOpen)
-	}).Width(448).Radius(0).Padding(24).Border(1, t.Border)
+	}).Width(448).Radius(cornerRadius(c, 120)).Padding(24).Border(1, t.Border)
 	nativeModal(c.Key("delete-dialog"), &a.deleteOpen, func() {
 		ui.Column(c).FillWidth().Gap(16).Children(func() {
 			ui.Text(c, "删除题库").FontSize(18).FontWeight(600)
@@ -64,7 +64,7 @@ func (a *app) libraryDialogs(c *ui.Context) {
 			})
 		})
 		dialogClose(c, "close-delete-x", &a.deleteOpen)
-	}).Width(440).Radius(0).Padding(24).Border(1, t.Border)
+	}).Width(440).Radius(cornerRadius(c, 120)).Padding(24).Border(1, t.Border)
 }
 
 // nativeModal 统一模态遮罩和可用尺寸；回调只能使用本次构建中的元素，不可跨帧保存。
@@ -72,7 +72,7 @@ func nativeModal(c *ui.Context, open *bool, fn func()) ui.Element {
 	w, h := c.Size()
 	return ui.DialogBase(c, open, func(back, panel ui.Element) {
 		back.Background(ui.RGBA(0, 0, 0, .5))
-		panel.Padding(24).Gap(16).Radius(0).Background(c.Theme().Background).Border(1, c.Theme().Border).MaxWidth(w-40).MaxHeight(h-40).Shadow(0, 10, 24, 0, ui.RGBA(0, 0, 0, .15))
+		panel.Padding(24).Gap(16).Radius(cornerRadius(c, min(w, h)-40)).Clip().Background(c.Theme().Background).Border(1, c.Theme().Border).MaxWidth(w-40).MaxHeight(h-40).Shadow(0, 10, 24, 0, ui.RGBA(0, 0, 0, .15))
 		fn()
 	})
 }

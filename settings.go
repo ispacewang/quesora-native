@@ -135,6 +135,7 @@ func (a *app) settingsDialog(c *ui.Context) {
 				line(c)
 				ui.Text(c, "外观与学习").FontSize(11).FontWeight(600).TextColor(t.TextMuted)
 				a.appearanceSettings(c)
+				a.cornerSettings(c)
 				settingRow(c, "重新作答", "重新进入已答题时隐藏旧答案，提交后更新记录。", a.repeatPractice, a.toggleRepeatPractice)
 				settingRow(c, "随机题序", "本轮随机排列题目，一轮内不重复。", a.random, a.toggleRandom)
 				settingRow(c, "速刷", quickModeHint, a.quick, a.toggleQuick)

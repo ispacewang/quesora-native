@@ -52,7 +52,7 @@ func (a *app) bankBar(c *ui.Context) {
 		scroller.Children(func() {
 			for _, name := range names {
 				selected := a.bank == name
-				tab := ui.Row(c.Key("tab-"+name)).Label("题库标签："+name).Height(30).Shrink(0).Border(1, ui.Transparent).Background(t.Surface.Alpha(.5)).AlignItems(ui.Center)
+				tab := ui.Row(c.Key("tab-"+name)).Label("题库标签："+name).Height(30).Shrink(0).Radius(cornerRadius(c, 30)).Clip().Border(1, ui.Transparent).Background(t.Surface.Alpha(.5)).AlignItems(ui.Center)
 				if selected {
 					tab.BorderColor(t.Accent).Background(t.Accent.Alpha(.15))
 					if *revealed != name {
