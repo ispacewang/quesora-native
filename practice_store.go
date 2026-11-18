@@ -45,13 +45,15 @@ func (s *questionStore) loadPractice() (map[string]response, map[string]bool, er
 	return answers, stars, nil
 }
 
-// saveResponse 按题目主键覆盖最近一次提交，不追加重复统计记录。
+// saveResponse 覆盖最近作答，并保留队列中已提交的备注，兼容没有 Note 字段的旧记录。
 func (s *questionStore) saveResponse(id string, r response) error {
 	payload, err := json.Marshal(r)
 	if err != nil {
 		return err
 	}
-	_, err = s.db.Exec("INSERT INTO practice(question_id,payload) VALUES(?,?) ON CONFLICT(question_id) DO UPDATE SET payload=excluded.payload", id, string(payload))
+	_, err = s.db.Exec(`INSERT INTO practice(question_id,payload) VALUES(?,?) ON CONFLICT(question_id) DO UPDATE SET payload=CASE
+ WHEN json_type(practice.payload,'$.Note') IS NULL THEN excluded.payload
+ ELSE json_set(excluded.payload,'$.Note',json_extract(practice.payload,'$.Note')) END`, id, string(payload))
 	return err
 }
 func (a *app) saveResponse(id string, r response) {
@@ -85,6 +87,7 @@ func (a *app) toggleStar(id string) {
 
 // resetPractice 只清空日常练习；题库、重要标记和保存的考试/错题本不受影响。
 func (a *app) resetPractice() {
+	a.practiceRevision++
 	a.savedWrong = false
 	a.exportOpen = false
 	a.answers = map[string]response{}

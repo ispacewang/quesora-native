@@ -15,7 +15,7 @@ from qa.installer import build_installer
 
 ROOT = pathlib.Path(__file__).resolve().parent
 VERSION_RE = r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?"
-SCENES = ["ai-settings", "ai-beta-off", "ai-generate", "ai-preview", "ai-diagnose", "restore", "update", "settings", "history", "empty", "unselected", "multi", "judge", "fill", "short", "selected", "correct", "wrong", "important", "exam", "exam-result", "exam-setup", "exam-setup-empty", "many-banks"]
+SCENES = ["ai-settings", "ai-beta-off", "ai-generate", "ai-preview", "ai-diagnose", "restore", "update", "settings", "history", "empty", "unselected", "multi", "judge", "fill", "short", "selected", "correct", "wrong", "mistake-note", "important", "exam", "exam-result", "exam-setup", "exam-setup-empty", "many-banks"]
 
 
 def build_version(value):
@@ -82,6 +82,7 @@ def build(stage, distribution, version, env, installer=False, iscc=None):
               ("exam-setup-dark", ["-scene", "exam-setup", "-dark"]),
               ("many-banks-dark", ["-scene", "many-banks", "-dark"]),
               ("history-dark", ["-scene", "history", "-dark"]),
+              ("mistake-note-dark", ["-scene", "mistake-note", "-dark"]),
               ("settings-dark", ["-scene", "settings", "-dark"]), ("ai-settings-dark", ["-scene", "ai-settings", "-dark"])]
     scenes += [(name, ["-scene", name]) for name in SCENES]
     for name, args in scenes:

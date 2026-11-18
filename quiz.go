@@ -307,5 +307,8 @@ func (a *app) answerFeedback(c *ui.Context, q question, r response) {
 				ui.Text(c, q.Explanation).FontSize(14).LineHeight(1.625).FillWidth()
 			})
 		}
+		if !r.Correct && !a.quick {
+			a.mistakeNoteEditor(c, q, r)
+		}
 	})
 }

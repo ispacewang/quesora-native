@@ -137,6 +137,7 @@ func (a *app) wrongPanel(c *ui.Context) {
 									ui.Text(c, "你的 "+given).FontSize(12).TextColor(t.Danger)
 									ui.Text(c, "正确 "+expected).FontSize(12).TextColor(t.Success)
 								})
+								mistakeNoteSummary(c, r.Note)
 							})
 						})
 					}
@@ -150,8 +151,8 @@ func (a *app) wrongPanel(c *ui.Context) {
 			} else if a.wrongSaving {
 				label = "保存中…"
 			}
-			control(c, "save-wrong", label, nil, primaryButton, a.saveWrongBook).FillWidth().Height(32).Disabled(a.savedWrong || a.wrongSaving || bad == 0 || a.store == nil)
-			control(c, "export-wrong", "导出错题 ▾", nil, outlineButton, func() { a.exportOpen = !a.exportOpen }).FillWidth().Height(32).Disabled(bad == 0)
+			control(c, "save-wrong", label, nil, primaryButton, a.saveWrongBook).FillWidth().Height(32).Disabled(a.savedWrong || a.wrongSaving || a.mistakeNoteSaving || bad == 0 || a.store == nil)
+			control(c, "export-wrong", "导出错题 ▾", nil, outlineButton, func() { a.exportOpen = !a.exportOpen }).FillWidth().Height(32).Disabled(bad == 0 || a.mistakeNoteSaving)
 			if a.exportOpen {
 				ui.Row(c).FillWidth().Gap(4).Children(func() {
 					control(c, "export-md", "Markdown", nil, ghostButton, func() { a.exportWrong("md") })

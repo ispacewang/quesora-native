@@ -35,12 +35,20 @@ func (a *app) wrongText(markdown bool) string {
 		if isTextQuestion(q) {
 			given, expected = r.Text, q.TextAnswer
 		}
-		fmt.Fprintf(&out, "\n你的答案：%s\n正确答案：%s\n解析：%s\n\n", given, expected, q.Explanation)
+		fmt.Fprintf(&out, "\n你的答案：%s\n正确答案：%s\n解析：%s\n", given, expected, q.Explanation)
+		if r.Note != "" {
+			if markdown {
+				out.WriteString("\n> **我的备注**\n> " + strings.ReplaceAll(r.Note, "\n", "\n> ") + "\n")
+			} else {
+				out.WriteString("【我的备注】" + r.Note + "\n")
+			}
+		}
+		out.WriteString("\n")
 	}
 	return out.String()
 }
 func (a *app) exportWrong(format string) {
-	if a.win == nil {
+	if a.win == nil || a.mistakeNoteSaving {
 		return
 	}
 	a.exportOpen = false
@@ -70,7 +78,7 @@ func (a *app) wrongBookData() ([]byte, int, error) {
 	return data, len(items), err
 }
 func (a *app) saveWrongBook() {
-	if a.store == nil || a.wrongSaving || a.savedWrong {
+	if a.store == nil || a.wrongSaving || a.savedWrong || a.mistakeNoteSaving {
 		return
 	}
 	data, count, err := a.wrongBookData()
@@ -100,6 +108,9 @@ func (a *app) clearWrong() {
 	var ids []string
 	for _, q := range a.questions {
 		if r, ok := a.answers[q.ID]; q.Bank == a.bank && ok && !r.Correct {
+			if q.ID == a.mistakeNoteID {
+				a.practiceRevision++
+			}
 			delete(a.answers, q.ID)
 			ids = append(ids, q.ID)
 		}

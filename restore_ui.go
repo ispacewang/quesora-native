@@ -73,6 +73,8 @@ func (a *app) confirmRestore() {
 
 // acceptRestoredState 只替换领域/学习状态；窗口、稳定句柄、真实仓库和调度器继续由原 app 持有。
 func (a *app) acceptRestoredState(next *app) {
+	a.practiceRevision++
+	a.mistakeNoteID, a.mistakeNote, a.mistakeNoteError = "", "", ""
 	a.questions, a.answers, a.starred = next.questions, next.answers, next.starred
 	a.bank, a.filter, a.filters = next.bank, next.filter, next.filters
 	a.importantOnly, a.onlyWrong = next.importantOnly, next.onlyWrong

@@ -41,7 +41,12 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if err = png.Encode(f, ui.Render(a.view, 1450, 800, 1)); err != nil {
+		preview := ui.NewTester(a.view, 1450, 800)
+		if *scene == "mistake-note" {
+			// Show the note editor below the result, without touching real user data.
+			preview.Scroll(700, 600, 0, 800)
+		}
+		if err = png.Encode(f, preview.Image()); err != nil {
 			log.Fatal(err)
 		}
 		if err = f.Close(); err != nil {

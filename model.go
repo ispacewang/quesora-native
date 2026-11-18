@@ -27,6 +27,7 @@ type response struct {
 	Choice        uint
 	Text          string
 	AIExplanation string `json:",omitempty"`
+	Note          string `json:",omitempty"`
 	Correct       bool
 }
 
@@ -50,6 +51,9 @@ type app struct {
 	attemptAnsweredID, reviewedQuestionID                          string
 	quickFeedbackPending                                           bool
 	quickAdvanceAt                                                 time.Time
+	mistakeNote, mistakeNoteID, mistakeNoteError                   string
+	practiceRevision                                               uint64
+	mistakeNoteSaving                                              bool
 	answerHandle                                                   ui.Handle
 	importantMotion                                                importantMotion
 	exam                                                           *examSession
@@ -123,6 +127,7 @@ func (a *app) current() (question, bool) {
 // navigate 开始一次新的题目访问，清空临时输入/动画并按重新作答设置恢复旧答案。
 func (a *app) navigate(index int) {
 	a.stopQuickAdvance()
+	a.mistakeNoteID, a.mistakeNote, a.mistakeNoteError = "", "", ""
 	if a.ai.Busy && a.ai.Task == "answer" {
 		a.cancelAITask()
 	}
@@ -183,6 +188,7 @@ func (a *app) submit() {
 // recordPracticeAnswer 共用本地与 AI 判题的提交路径。先确认当前题，避免错题筛选在判对后立即移除它。
 func (a *app) recordPracticeAnswer(q question, r response) {
 	current, ok := a.current()
+	r.Note = a.answers[q.ID].Note
 	a.answers[q.ID] = r
 	a.saveResponse(q.ID, r)
 	a.savedWrong = false

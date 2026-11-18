@@ -331,6 +331,7 @@ func reviewQuestion(c *ui.Context, q question, r response, important bool, index
 		if q.Explanation != "" {
 			ui.Text(c, "解析："+q.Explanation).FillWidth().FontSize(12).LineHeight(1.6).TextColor(t.TextMuted)
 		}
+		mistakeNoteSummary(c, r.Note)
 	})
 }
 func resultWidth(e *examSession) float32 {
