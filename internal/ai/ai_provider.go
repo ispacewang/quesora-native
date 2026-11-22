@@ -1,5 +1,5 @@
 // AI 服务商与网络边界：仅连接所选厂商官方 HTTPS 地址，禁止认证请求重定向。
-package desktop
+package ai
 
 import (
 	"bytes"
@@ -14,10 +14,10 @@ import (
 	"time"
 )
 
-// aiProvider 将品牌、默认模型和官方服务地址绑定，防止切换服务商时误发密钥。
-type aiProvider struct{ ID, Name, BaseURL, Model, Help string }
+// Provider 将品牌、默认模型和官方服务地址绑定，防止切换服务商时误发密钥。
+type Provider struct{ ID, Name, BaseURL, Model, Help string }
 
-var aiProviders = []aiProvider{
+var providers = []Provider{
 	{"deepseek", "DeepSeek", "https://api.deepseek.com", "deepseek-flash", "https://api-docs.deepseek.com/"},
 	{"openai", "OpenAI", "https://api.openai.com/v1", "gpt-4.1-mini", "https://developers.openai.com/api/docs/models/gpt-4.1-mini"},
 	{"qwen", "通义千问", "https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen-plus", "https://help.aliyun.com/zh/model-studio/compatibility-of-openai-with-dashscope"},
@@ -25,36 +25,36 @@ var aiProviders = []aiProvider{
 	{"doubao", "豆包", "https://ark.cn-beijing.volces.com/api/v3", "doubao-seed-2-1-pro-260628", "https://console.volcengine.com/ark"},
 }
 
-// aiProfile 保存单个厂商的地址、模型及密钥；落盘前整份配置由 DPAPI 加密。
-type aiProfile struct{ BaseURL, Model, Key string }
+// Profile 保存单个厂商的地址、模型及密钥；落盘前整份配置由 DPAPI 加密。
+type Profile struct{ BaseURL, Model, Key string }
 
-// aiConfig 将 Beta 总开关与判题开关分开，旧配置升级后仍默认关闭 Beta。
-type aiConfig struct {
+// Config 将 Beta 总开关与判题开关分开，旧配置升级后仍默认关闭 Beta。
+type Config struct {
 	Enabled   bool
 	AutoJudge bool
 	Selected  string
-	Profiles  map[string]aiProfile
+	Profiles  map[string]Profile
 }
 
-func defaultAIConfig() aiConfig {
-	c := aiConfig{Selected: "deepseek", Profiles: map[string]aiProfile{}}
-	for _, p := range aiProviders {
-		c.Profiles[p.ID] = aiProfile{BaseURL: p.BaseURL, Model: p.Model}
+func DefaultConfig() Config {
+	c := Config{Selected: "deepseek", Profiles: map[string]Profile{}}
+	for _, p := range providers {
+		c.Profiles[p.ID] = Profile{BaseURL: p.BaseURL, Model: p.Model}
 	}
 	return c
 }
-func providerByID(id string) (aiProvider, bool) {
-	for _, p := range aiProviders {
+func ProviderByID(id string) (Provider, bool) {
+	for _, p := range providers {
 		if p.ID == id {
 			return p, true
 		}
 	}
-	return aiProvider{}, false
+	return Provider{}, false
 }
 
-// validateAIProfile supports regional/workspace URLs but never an arbitrary third-party proxy.
-func validateAIProfile(id string, p aiProfile) error {
-	if _, ok := providerByID(id); !ok {
+// ValidateProfile supports regional/workspace URLs but never an arbitrary third-party proxy.
+func ValidateProfile(id string, p Profile) error {
+	if _, ok := ProviderByID(id); !ok {
 		return errors.New("请选择支持的 AI 服务商")
 	}
 	if strings.TrimSpace(p.Key) == "" || len(p.Key) > 4096 || strings.ContainsAny(p.Key, "\r\n\t ") {
@@ -89,17 +89,17 @@ func validateAIProfile(id string, p aiProfile) error {
 	}
 	return nil
 }
-func newAIHTTPClient() *http.Client {
+func NewHTTPClient() *http.Client {
 	return &http.Client{Timeout: 180 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return errors.New("AI 接口不允许重定向") }}
 }
 
-// aiChat never exposes raw service bodies or transport errors: they may echo credentials.
+// Chat never exposes raw service bodies or transport errors: they may echo credentials.
 // A failed request is not automatically retried, avoiding duplicate paid generations.
-func aiChat(ctx context.Context, client *http.Client, id string, p aiProfile, system, user string, tokens int) (string, error) {
+func Chat(ctx context.Context, client *http.Client, id string, p Profile, system, user string, tokens int) (string, error) {
 	if e := ctx.Err(); e != nil {
 		return "", e
 	}
-	if e := validateAIProfile(id, p); e != nil {
+	if e := ValidateProfile(id, p); e != nil {
 		return "", e
 	}
 	if len(user) > 220000 || len(system) > 12000 {
@@ -170,3 +170,6 @@ func aiChat(ctx context.Context, client *http.Client, id string, p aiProfile, sy
 	}
 	return v.Choices[0].Message.Content, nil
 }
+
+// Providers returns a copy of the supported provider catalog.
+func Providers() []Provider { return append([]Provider(nil), providers...) }

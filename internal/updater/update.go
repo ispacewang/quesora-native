@@ -1,5 +1,5 @@
 // 官方 GitHub Release 发现与版本选择。没有启动时网络请求，调用方显式触发并持有取消上下文。
-package desktop
+package updater
 
 import (
 	"context"
@@ -16,33 +16,33 @@ import (
 	"github.com/ispacewang/quesora-native/internal/buildinfo"
 )
 
-const updateRepository = "ispacewang/quesora-native"
-const updateAPI = "https://api.github.com/repos/" + updateRepository + "/releases?per_page=100"
+const Repository = "ispacewang/quesora-native"
+const updateAPI = "https://api.github.com/repos/" + Repository + "/releases?per_page=100"
 const maxUpdateBytes int64 = 200 << 20
 
-// updateRateLimitError carries the server retry boundary; the UI must not immediately repeat the same request.
-type updateRateLimitError struct{ Until time.Time }
+// RateLimitError carries the server retry boundary; the UI must not immediately repeat the same request.
+type RateLimitError struct{ Until time.Time }
 
-func (e *updateRateLimitError) Error() string {
+func (e *RateLimitError) Error() string {
 	return "GitHub 请求频率受限，请在 " + e.Until.Local().Format("15:04:05") + " 后重试，或使用发布页面。"
 }
 
-type updateAsset struct {
+type Asset struct {
 	Name string `json:"name"`
 	URL  string `json:"browser_download_url"`
 	Size int64  `json:"size"`
 }
-type updateRelease struct {
-	Tag        string        `json:"tag_name"`
-	Draft      bool          `json:"draft"`
-	Prerelease bool          `json:"prerelease"`
-	Assets     []updateAsset `json:"assets"`
+type Release struct {
+	Tag        string  `json:"tag_name"`
+	Draft      bool    `json:"draft"`
+	Prerelease bool    `json:"prerelease"`
+	Assets     []Asset `json:"assets"`
 }
 
-// updateCandidate 只由验证过的仓库标签和固定 Windows 产物名构造，不执行 Release 正文里的命令或链接。
-type updateCandidate struct {
+// Candidate 只由验证过的仓库标签和固定 Windows 产物名构造，不执行 Release 正文里的命令或链接。
+type Candidate struct {
 	Version, Tag, Page   string
-	Installer, Checksums updateAsset
+	Installer, Checksums Asset
 }
 type updateVersion struct {
 	core [3]string
@@ -149,15 +149,15 @@ func compareUpdateVersions(a, b string) (int, error) {
 
 func trustedUpdateAsset(raw, tag, name string) bool {
 	u, e := url.Parse(raw)
-	return e == nil && u.Scheme == "https" && u.Host == "github.com" && u.User == nil && u.RawQuery == "" && u.Fragment == "" && u.Path == "/"+updateRepository+"/releases/download/"+tag+"/"+name
+	return e == nil && u.Scheme == "https" && u.Host == "github.com" && u.User == nil && u.RawQuery == "" && u.Fragment == "" && u.Path == "/"+Repository+"/releases/download/"+tag+"/"+name
 }
-func candidateFromRelease(r updateRelease) (*updateCandidate, error) {
+func candidateFromRelease(r Release) (*Candidate, error) {
 	if _, e := parseUpdateVersion(r.Tag); e != nil || !strings.HasPrefix(r.Tag, "v") {
 		return nil, nil
 	}
 	version := strings.TrimPrefix(r.Tag, "v")
 	prefix := "QuesoraNative-" + version
-	c := &updateCandidate{Version: version, Tag: r.Tag, Page: "https://github.com/" + updateRepository + "/releases/tag/" + r.Tag}
+	c := &Candidate{Version: version, Tag: r.Tag, Page: "https://github.com/" + Repository + "/releases/tag/" + r.Tag}
 	counts := map[string]int{}
 	for _, asset := range r.Assets {
 		switch asset.Name {
@@ -175,7 +175,7 @@ func candidateFromRelease(r updateRelease) (*updateCandidate, error) {
 	if counts["installer"] == 0 || counts["checksums"] == 0 {
 		return nil, nil
 	}
-	for _, asset := range []updateAsset{c.Installer, c.Checksums} {
+	for _, asset := range []Asset{c.Installer, c.Checksums} {
 		if !trustedUpdateAsset(asset.URL, c.Tag, asset.Name) {
 			return nil, fmt.Errorf("更新下载地址不属于官方仓库")
 		}
@@ -186,13 +186,13 @@ func candidateFromRelease(r updateRelease) (*updateCandidate, error) {
 	return c, nil
 }
 
-// selectUpdateRelease 预览版可接收更高预览/正式版，正式版只接收正式版；永不建议降级或未完成上传的版本。
-func selectUpdateRelease(releases []updateRelease, current string) (*updateCandidate, error) {
+// SelectRelease 预览版可接收更高预览/正式版，正式版只接收正式版；永不建议降级或未完成上传的版本。
+func SelectRelease(releases []Release, current string) (*Candidate, error) {
 	running, e := parseUpdateVersion(current)
 	if e != nil {
 		return nil, e
 	}
-	var best *updateCandidate
+	var best *Candidate
 	for _, r := range releases {
 		if r.Draft {
 			continue
@@ -224,8 +224,8 @@ func selectUpdateRelease(releases []updateRelease, current string) (*updateCandi
 	return best, nil
 }
 
-// newUpdateHTTPClient 仅允许 HTTPS 的 GitHub/API/发行资产 CDN 重定向；不携带用户 Git 凭据。
-func newUpdateHTTPClient() *http.Client {
+// NewHTTPClient 仅允许 HTTPS 的 GitHub/API/发行资产 CDN 重定向；不携带用户 Git 凭据。
+func NewHTTPClient() *http.Client {
 	return &http.Client{Timeout: 10 * time.Minute, CheckRedirect: func(req *http.Request, via []*http.Request) error {
 		if len(via) >= 5 {
 			return fmt.Errorf("更新下载重定向过多")
@@ -279,7 +279,7 @@ func updateRequest(ctx context.Context, client *http.Client, method, raw string)
 			if date, e := http.ParseTime(resp.Header.Get("Retry-After")); e == nil && date.After(until) {
 				until = date
 			}
-			return nil, &updateRateLimitError{Until: until}
+			return nil, &RateLimitError{Until: until}
 		}
 		return nil, &updateHTTPError{Status: resp.StatusCode}
 	}
@@ -303,16 +303,16 @@ func readUpdateText(ctx context.Context, client *http.Client, raw string, limit 
 
 // fetchUpdateAPI 是官方订阅源不可用时的备用；发布列表可包含预览版。
 // API 契约：https://docs.github.com/en/rest/releases/releases#list-releases
-func fetchUpdateAPI(ctx context.Context, client *http.Client, current string) (*updateCandidate, error) {
+func fetchUpdateAPI(ctx context.Context, client *http.Client, current string) (*Candidate, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	data, e := readUpdateText(ctx, client, updateAPI, 4<<20)
 	if e != nil {
 		return nil, e
 	}
-	var releases []updateRelease
+	var releases []Release
 	if e = json.Unmarshal(data, &releases); e != nil {
 		return nil, fmt.Errorf("更新信息无法解析：%w", e)
 	}
-	return selectUpdateRelease(releases, current)
+	return SelectRelease(releases, current)
 }

@@ -9,17 +9,18 @@ import (
 	"path/filepath"
 
 	"github.com/ispacewang/quesora-native/internal/buildinfo"
+	"github.com/ispacewang/quesora-native/internal/updater"
 )
 
 func (a *app) configureUpdater() {
-	client := newUpdateHTTPClient()
-	a.updates.fetch = func(ctx context.Context) (*updateCandidate, error) {
-		return fetchUpdate(ctx, client, buildinfo.Version)
+	client := updater.NewHTTPClient()
+	a.updates.fetch = func(ctx context.Context) (*updater.Candidate, error) {
+		return updater.Fetch(ctx, client, buildinfo.Version)
 	}
 	cache, cacheErr := os.UserCacheDir()
 	if cacheErr == nil && filepath.IsAbs(cache) {
-		a.updates.download = func(ctx context.Context, c updateCandidate, progress func(int64, int64)) (downloadedUpdate, error) {
-			return downloadUpdate(ctx, client, c, filepath.Join(cache, "QuesoraNative", "updates", c.Version), progress)
+		a.updates.download = func(ctx context.Context, c updater.Candidate, progress func(int64, int64)) (updater.Download, error) {
+			return updater.DownloadInstaller(ctx, client, c, filepath.Join(cache, "QuesoraNative", "updates", c.Version), progress)
 		}
 	} else {
 		a.updates.message = "更新缓存目录不可用，请从发布页面下载。"

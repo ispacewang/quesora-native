@@ -11,10 +11,11 @@ import (
 	"time"
 
 	"github.com/ispacewang/quesora-native/internal/domain"
+	"github.com/ispacewang/quesora-native/internal/storage"
+	// readRestorableState 用只读仓库验证已知表和可解码记录，不初始化或修补待恢复文件。
+	// 返回的 app 只携带模型值；没有窗口、队列或构建 Context，不会从后台触发 UI 操作。
 )
 
-// readRestorableState 用只读仓库验证已知表和可解码记录，不初始化或修补待恢复文件。
-// 返回的 app 只携带模型值；没有窗口、队列或构建 Context，不会从后台触发 UI 操作。
 func readRestorableState(db *sql.DB, filename string) (*app, error) {
 	var status string
 	if err := db.QueryRow("PRAGMA quick_check").Scan(&status); err != nil {
@@ -115,11 +116,11 @@ func (s *questionStore) restoreFrom(filename string) (safety string, err error) 
 	}
 	defer os.RemoveAll(temp)
 	snapshot := filepath.Join(temp, "source.db")
-	src, err := openReadOnlyDatabase(source)
+	src, err := storage.OpenReadOnly(source)
 	if err != nil {
 		return "", err
 	}
-	err = snapshotDatabase(src, snapshot, false)
+	err = storage.Snapshot(src, snapshot, false)
 	closeErr := src.Close()
 	if err != nil {
 		return "", err
@@ -127,7 +128,7 @@ func (s *questionStore) restoreFrom(filename string) (safety string, err error) 
 	if closeErr != nil {
 		return "", closeErr
 	}
-	checked, err := openReadOnlyDatabase(snapshot)
+	checked, err := storage.OpenReadOnly(snapshot)
 	if err != nil {
 		return "", err
 	}

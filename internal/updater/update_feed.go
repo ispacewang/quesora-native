@@ -1,6 +1,6 @@
 // 官方 Release 订阅源包含预览版，不消耗 REST API 的匿名查询配额。
 // 仅使用固定仓库的标签链接；资产地址按已验证版本构造，再确认长度和 SHA-256。
-package desktop
+package updater
 
 import (
 	"context"
@@ -14,15 +14,15 @@ import (
 	"time"
 )
 
-const updateFeed = "https://github.com/" + updateRepository + "/releases.atom"
+const updateFeed = "https://github.com/" + Repository + "/releases.atom"
 
 type updateHTTPError struct{ Status int }
 
 func (e *updateHTTPError) Error() string { return fmt.Sprintf("更新服务返回 HTTP %d", e.Status) }
 
-// fetchUpdate 预览通道优先使用公开订阅源；正式通道通过 API 复核 prerelease 标记。
+// Fetch 预览通道优先使用公开订阅源；正式通道通过 API 复核 prerelease 标记。
 // 订阅源失败时只调用一次 API，不重试限流响应。
-func fetchUpdate(ctx context.Context, client *http.Client, current string) (*updateCandidate, error) {
+func Fetch(ctx context.Context, client *http.Client, current string) (*Candidate, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	running, err := parseUpdateVersion(current)
@@ -43,7 +43,7 @@ func fetchUpdate(ctx context.Context, client *http.Client, current string) (*upd
 	return fetchUpdateAPI(ctx, client, current)
 }
 
-func fetchUpdateFeed(ctx context.Context, client *http.Client, current string) (*updateCandidate, error) {
+func fetchUpdateFeed(ctx context.Context, client *http.Client, current string) (*Candidate, error) {
 	running, err := parseUpdateVersion(current)
 	if err != nil {
 		return nil, err
@@ -73,7 +73,7 @@ func fetchUpdateFeed(ctx context.Context, client *http.Client, current string) (
 				continue
 			}
 			u, e := url.Parse(link.Href)
-			prefix := "/" + updateRepository + "/releases/tag/"
+			prefix := "/" + Repository + "/releases/tag/"
 			if e != nil || u.Scheme != "https" || u.Host != "github.com" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || !strings.HasPrefix(u.Path, prefix) {
 				continue
 			}
@@ -103,10 +103,10 @@ func fetchUpdateFeed(ctx context.Context, client *http.Client, current string) (
 	for _, tag := range tags[:min(len(tags), 5)] {
 		version := strings.TrimPrefix(tag, "v")
 		prefix := "QuesoraNative-" + version
-		release := updateRelease{Tag: tag}
+		release := Release{Tag: tag}
 		complete := true
 		for _, name := range []string{prefix + "-setup-windows-x64.exe", prefix + "-SHA256SUMS.txt"} {
-			raw := "https://github.com/" + updateRepository + "/releases/download/" + tag + "/" + name
+			raw := "https://github.com/" + Repository + "/releases/download/" + tag + "/" + name
 			response, e := updateRequest(ctx, client, http.MethodHead, raw)
 			if e != nil {
 				var status *updateHTTPError
@@ -121,7 +121,7 @@ func fetchUpdateFeed(ctx context.Context, client *http.Client, current string) (
 			if size <= 0 {
 				return nil, fmt.Errorf("发布文件未提供有效长度")
 			}
-			release.Assets = append(release.Assets, updateAsset{Name: name, URL: raw, Size: size})
+			release.Assets = append(release.Assets, Asset{Name: name, URL: raw, Size: size})
 		}
 		if !complete {
 			continue

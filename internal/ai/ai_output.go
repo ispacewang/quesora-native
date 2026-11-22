@@ -1,5 +1,5 @@
 // 模型响应只作为数据解析。字段错误时明确失败；重复交由生成任务过滤，不猜测答案。
-package desktop
+package ai
 
 import (
 	"encoding/json"
@@ -22,7 +22,7 @@ func aiJSON(text string) string {
 	}
 	return text
 }
-func parseAIQuestions(text, bank string) ([]domain.Question, error) {
+func ParseQuestions(text, bank string) ([]domain.Question, error) {
 	raw := []byte(aiJSON(text))
 	var rows []struct {
 		Question, Type, Answer, Explanation string
@@ -42,7 +42,7 @@ func parseAIQuestions(text, bank string) ([]domain.Question, error) {
 		r.Question = strings.TrimSpace(r.Question)
 		r.Answer = strings.TrimSpace(r.Answer)
 		validKind := false
-		for _, k := range examKinds {
+		for _, k := range domain.QuestionKinds() {
 			if k == r.Type {
 				validKind = true
 			}
@@ -88,18 +88,18 @@ func parseAIQuestions(text, bank string) ([]domain.Question, error) {
 	return out, nil
 }
 
-type aiJudgment struct {
+type Judgment struct {
 	Correct     bool
 	Explanation string
 }
 
-func parseAIJudgment(text string) (aiJudgment, error) {
+func ParseJudgment(text string) (Judgment, error) {
 	var v struct {
 		Correct     *bool
 		Explanation string
 	}
 	if json.Unmarshal([]byte(aiJSON(text)), &v) != nil || v.Correct == nil || strings.TrimSpace(v.Explanation) == "" || len(v.Explanation) > 18000 {
-		return aiJudgment{}, errors.New("AI 判题结果格式无效；原答题记录未修改")
+		return Judgment{}, errors.New("AI 判题结果格式无效；原答题记录未修改")
 	}
-	return aiJudgment{*v.Correct, v.Explanation}, nil
+	return Judgment{*v.Correct, v.Explanation}, nil
 }

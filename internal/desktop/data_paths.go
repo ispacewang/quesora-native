@@ -4,6 +4,7 @@ package desktop
 
 import (
 	"fmt"
+	"github.com/ispacewang/quesora-native/internal/storage"
 	"os"
 	"path/filepath"
 )
@@ -64,12 +65,12 @@ func prepareInstalledData(location dataLocation) error {
 	} else if err != nil {
 		return err
 	}
-	db, err := openReadOnlyDatabase(location.LegacyDB)
+	db, err := storage.OpenReadOnly(location.LegacyDB)
 	if err != nil {
 		return err
 	}
 	defer db.Close()
-	if err = snapshotDatabase(db, target, false); err != nil {
+	if err = storage.Snapshot(db, target, false); err != nil {
 		return fmt.Errorf("迁移旧数据失败，原文件已保留：%w", err)
 	}
 	return nil

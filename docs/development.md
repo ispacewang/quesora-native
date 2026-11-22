@@ -8,9 +8,13 @@
 - domain 提供 Question、Response、判题与选项映射，不依赖 MyGo 或 SQLite。
 - importer 依赖 domain，负责 Excel/CSV 读取、表头发现和标准化，返回 Result。
 - assets 提供统一的内嵌资源，源码资源目录与安装器图标原稿分开。
-- desktop 组合上述模块，保留 UI 状态、串行任务和现有 SQLite/AI/更新编排。
+- desktop 组合上述模块，持有 UI 状态与串行任务，负责 Beta 开关、取消、文件选择、安装器启动以及结果回写。
+- ai 与 updater 的纯服务测试在各自包内，desktop 的集成测试覆盖开关、取消、安装交接等用户流程。
+- 服务商目录与题型顺序通过返回副本的函数提供，调用者不能改写共享目录。
 
-这是架构迁移的第一批。SQLite、AI、更新和 PDF 的独立包以及 app 状态分组在后续批次提取。新增业务规则优先放入 domain，文件解析规则放入 importer，界面状态继续由 desktop 的 UI 线程拥有。
+第二批新增 ai、updater、exportpdf 和 storage 服务包。ai 负责服务商目录、HTTP、密钥配置、响应解析与去重，updater 负责发布发现、下载和校验，exportpdf 接收捕获的 Paper 数据生成文件，storage 提供 SQLite 只读打开和一致性快照。它们不依赖 desktop 或 MyGo。
+
+SQLite 题库仓储、恢复状态解释和 app 状态分组仍待后续提取。新增业务规则优先放入 domain，文件解析规则放入 importer，界面状态继续由 desktop 的 UI 线程拥有。
 
 ## 入口与职责
 
@@ -60,13 +64,13 @@ UI 回归使用 ui.NewTester 覆盖焦点、按键、重复帧和最小窗口；
 
 ## 新增维护边界
 
-数据恢复在 data_restore.go/restore_ui.go：先生成只读快照验证，再保留恢复前备份，最后事务替换四张业务表，不在活动连接存在时直接替换 .db 文件。
+数据恢复编排在 internal/desktop/data_restore.go 和 restore_ui.go，一致性快照在 internal/storage：先生成只读快照验证，再保留恢复前备份，最后事务替换四张业务表，不在活动连接存在时直接替换 .db 文件。
 
-更新在 update.go/update_download.go/update_ui.go/update_runtime.go：公开元数据只决定候选，固定仓库/产物名/HTTPS 重定向名单和 SHA-256 均通过才允许安装；测试注入下载/进程替身。实际安装在用户确认后交给可见安装器，不在自动化测试中启动真实安装。版本、来源 URL、取消、限流和缓存被修改均需回归。
+更新服务在 internal/updater，界面编排在 internal/desktop/update_ui.go 和 update_runtime.go：公开元数据只决定候选，固定仓库/产物名/HTTPS 重定向名单和 SHA-256 均通过才允许安装；测试注入下载/进程替身。实际安装在用户确认后交给可见安装器，不在自动化测试中启动真实安装。版本、来源 URL、取消、限流和缓存被修改均需回归。
 
 resources/icon-design.json 记录图标导出参数。qa/icons 使用用户提供的高分辨率原图，所有尺寸和标题栏均保留完整题卡、A/B/C/D、Q 气泡、颜色和布局，只等比缩放并裁切外部圆角，不重绘或按尺寸更换标志。执行 JSON 中的 export.command 同时重建 resources/icon.png、internal/assets/resources/app-icon.png 和 resources/icon-frames/，不要手动缩小已有 PNG。build-preview.py 在隔离目录重新生成全部帧，qa/winres 使用 NewIconFromImages 直接嵌入，不进行二次缩放；qa/verify_executable.py 对实际 PE 帧与导出 PNG 逐字节比较。
 
-AI 维护边界：ai_provider.go 绑定五厂商官方 HTTPS 来源，禁止认证请求重定向，不记录服务原始错误或密钥；ai_config.go/ai_secret_windows.go 独立加密配置。ai_state.go 用任务世代拒绝取消后的迟到响应，短暂的配置原子写入不能取消。ai_tasks.go 先完整预览再事务入库，ai_grading.go 只更新练习记录，考试保持本地评分。Beta 默认关闭并在每个网络任务入口检查。
+AI 维护边界：internal/ai/ai_provider.go 绑定五厂商官方 HTTPS 来源，禁止认证请求重定向，不记录服务原始错误或密钥；internal/ai/ai_config.go 和 ai_secret_windows.go 独立加密配置。ai_state.go 用任务世代拒绝取消后的迟到响应，短暂的配置原子写入不能取消。ai_tasks.go 先完整预览再事务入库，ai_grading.go 只更新练习记录，考试保持本地评分。Beta 默认关闭并在每个网络任务入口检查。
 
 internal/desktop/appearance.go 将持久化外观选择与实时 dark 配色分开，MyGo OnUpdated 在 UI 线程同步系统变化，窗口关闭解除监听；学习设置版本 2 保留版本 1 的浅/深色选择。MyGo 固定 v0.10.0，升级前阅读其迁移指南并运行 migrate-ui 预览、mygo vet 和全部测试。
 

@@ -12,6 +12,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"github.com/ispacewang/quesora-native/internal/domain"
+	"github.com/ispacewang/quesora-native/internal/exportpdf"
 )
 
 func examFixture(t *testing.T) *examSession {
@@ -160,7 +161,7 @@ func TestExamHistoryRoundTripAndPDF(t *testing.T) {
 	}
 	for _, answers := range []bool{false, true} {
 		p := filepath.Join(t.TempDir(), "paper.pdf")
-		if err = writeExamPDF(p, e, answers); err != nil {
+		if err = exportpdf.Write(p, exportpdf.Paper{Bank: e.Bank, Minutes: e.Minutes, Questions: e.Questions, Responses: e.Responses, Important: e.Important}, answers); err != nil {
 			t.Fatal(err)
 		}
 		b, _ := os.ReadFile(p)
