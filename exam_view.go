@@ -164,7 +164,7 @@ func (a *app) examQuestion(c *ui.Context, e *examSession) {
 				ui.Text(c, r.Text).FillWidth().Radius(cornerRadius(c, 80)).Padding(12).LineHeight(1.625).Border(1, t.Border).Margin(8, 0, 0, 0)
 			}
 		} else {
-			ui.Column(c.Key("exam-options")).FillWidth().Radius(cornerRadius(c, 80)).Padding(1).Gap(8).Border(1, t.Border.Alpha(.5)).Children(func() {
+			ui.Column(c.Key("exam-options")).FillWidth().Gap(8).Children(func() {
 				for display, original := range responseOrder(q, *r) {
 					selected := r.Choice&(1<<original) != 0
 					border, bg, fg := t.Border.Alpha(.5), t.Background, t.TextMuted
