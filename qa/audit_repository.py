@@ -20,8 +20,11 @@ def allowed(name):
     p = pathlib.PurePosixPath(name)
     if name in ROOT_FILES | QA_FILES | OTHER_FILES:
         return True
-    if len(p.parts) == 1 and p.suffix == ".go":
+    if p.suffix == ".go" and (name.startswith("cmd/quesora/") or name.startswith("internal/")):
         return True
+    if name.startswith("internal/assets/resources/"):
+        relative = name.removeprefix("internal/assets/")
+        return allowed(relative)
     if name in {"resources/providers/"+p+".svg" for p in ("openai","deepseek","qwen","zhipu","doubao")} or name=="resources/providers/LICENSE.txt":
         return True
     if name.startswith("resources/"):

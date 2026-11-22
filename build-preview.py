@@ -20,7 +20,7 @@ SCENES = ["ai-settings", "ai-beta-off", "ai-generate", "ai-preview", "ai-diagnos
 
 def build_version(value):
     if not value:
-        value = re.search(r'appVersion\s*=\s*"([^"]+)"', (ROOT / "version.go").read_text(encoding="utf-8")).group(1)
+        value = re.search(r'Version\s*=\s*"([^"]+)"', (ROOT / "internal/buildinfo/version.go").read_text(encoding="utf-8")).group(1)
     value = value.removeprefix("v")
     if not re.fullmatch(VERSION_RE, value):
         raise ValueError("Expected a version such as 0.1.0 or 0.1.0-preview.3")
@@ -52,15 +52,15 @@ def module_licenses(module_root, target, env):
 
 
 def build(stage, distribution, version, env, installer=False, iscc=None):
-    for source in ROOT.glob("*.go"):
-        shutil.copy2(source, stage / source.name)
+    for name in ("cmd", "internal"):
+        shutil.copytree(ROOT / name, stage / name)
     for name in ("go.mod", "go.sum"):
         shutil.copy2(ROOT / name, stage / name)
     for name in ("testdata", "third_party", "resources"):
         shutil.copytree(ROOT / name, stage / name)
     # Resize the complete artwork directly for every DPI size; resource packaging must not resize these frames.
-    run(["go", "run", "./qa/icons", stage / "resources/icon-source.png", stage / "resources/icon.png", stage / "resources/app-icon.png", stage / "resources/icon-frames"], ROOT, env)
-    gofiles = sorted(stage.glob("*.go"))
+    run(["go", "run", "./qa/icons", stage / "resources/icon-source.png", stage / "resources/icon.png", stage / "internal/assets/resources/app-icon.png", stage / "resources/icon-frames"], ROOT, env)
+    gofiles = sorted((stage / "cmd").rglob("*.go")) + sorted((stage / "internal").rglob("*.go"))
     unformatted = run(["gofmt", "-l", *gofiles], stage, env, capture=True).stdout.strip()
     if unformatted:
         raise RuntimeError("Run gofmt on:\n" + unformatted)
@@ -71,12 +71,12 @@ def build(stage, distribution, version, env, installer=False, iscc=None):
     resource_module = ROOT / "qa" / "winres"
     run(["go", "mod", "download"], resource_module, env)
     run(["go", "mod", "verify"], resource_module, env)
-    run(["go", "run", ".", stage / "resources/icon-frames", stage / "quesora_windows_amd64.syso", stage / "quesora.ico"], resource_module, env)
+    run(["go", "run", ".", stage / "resources/icon-frames", stage / "cmd/quesora/quesora_windows_amd64.syso", stage / "quesora.ico"], resource_module, env)
     out = ROOT / "build"
     out.mkdir(exist_ok=True)
     executable = out / "QuesoraNativePreview.exe"
-    flags = "-s -w -H=windowsgui -X main.appVersion=" + version
-    run(["go", "build", "-trimpath", "-ldflags", flags, "-o", executable, "."], stage, env)
+    flags = "-s -w -H=windowsgui -X github.com/ispacewang/quesora-native/internal/buildinfo.Version=" + version
+    run(["go", "build", "-trimpath", "-ldflags", flags, "-o", executable, "./cmd/quesora"], stage, env)
     run([sys.executable, ROOT / "qa" / "verify_executable.py", executable, stage / "resources/icon-frames"], ROOT, env)
     scenes = [("light", []), ("dark", ["-dark"]), ("upload", ["-show-upload"]),
               ("exam-setup-dark", ["-scene", "exam-setup", "-dark"]),

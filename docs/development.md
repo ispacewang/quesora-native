@@ -1,14 +1,24 @@
 # 维护导览
 
-本项目为 Go/MyGo 原生 Windows 应用。根包为可执行程序；较小的文件按领域拆分，共享明确的模型，而不是按文件创建无意义的公共 API。第三方 XLS 兼容副本的版权和原始注释保留，变更记录在 third_party/xls/QUESORA_CHANGES.md。
+本项目为 Go/MyGo 原生 Windows 应用。启动入口位于 cmd/quesora，模块路径为 github.com/ispacewang/quesora-native。共享模型与判题在 internal/domain，文件导入在 internal/importer，原生界面和操作编排在 internal/desktop，嵌入资源由 internal/assets 持有，版本注入集中在 internal/buildinfo。第三方 XLS 兼容副本的版权和原始注释保留，变更记录在 third_party/xls/QUESORA_CHANGES.md。
+
+## 当前包边界
+
+- cmd/quesora 只调用 desktop.Run，负责可执行程序入口。
+- domain 提供 Question、Response、判题与选项映射，不依赖 MyGo 或 SQLite。
+- importer 依赖 domain，负责 Excel/CSV 读取、表头发现和标准化，返回 Result。
+- assets 提供统一的内嵌资源，源码资源目录与安装器图标原稿分开。
+- desktop 组合上述模块，保留 UI 状态、串行任务和现有 SQLite/AI/更新编排。
+
+这是架构迁移的第一批。SQLite、AI、更新和 PDF 的独立包以及 app 状态分组在后续批次提取。新增业务规则优先放入 domain，文件解析规则放入 importer，界面状态继续由 desktop 的 UI 线程拥有。
 
 ## 入口与职责
 
 | 领域 | 主要文件 | 约束 |
 | --- | --- | --- |
-| 启动/原生视图 | main.go、view.go、quiz.go、native_dialogs.go | 快照启动不打开用户数据库；模态窗口隔离练习快捷键 |
-| 题库导入 | importer.go、import_format.go、import_schema.go、import_xls.go | 先识别容器，再识别表头说明；未知或冲突行报告来源，不伪造答案 |
-| 练习 | model.go、practice_session.go、practice_repeat.go | 最近提交与本次访问分开，答案始终使用原始选项索引 |
+| 启动/原生视图 | cmd/quesora/main.go、internal/desktop/{main,view,quiz,native_dialogs}.go | 快照启动不打开用户数据库；模态窗口隔离练习快捷键 |
+| 题库导入 | internal/importer/*.go | 先识别容器，再识别表头说明；未知或冲突行报告来源，不伪造答案 |
+| 练习 | internal/domain/*.go、internal/desktop/practice_*.go | 最近提交与本次访问分开，答案始终使用原始选项索引 |
 | 考试/PDF | exam.go、exam_setup*.go、exam_view.go、exam_pdf.go | 固定题序和映射，独立于练习；重要题失误综合分归零但保留实际正确数 |
 | 数据/设置 | storage.go、practice_store.go、data_*.go、preferences.go | 导入原子提交、单连接、串行任务、一致性备份、失败保留原文件 |
 | 原生资源 | fonts.go、icons.go、important_animation.go、frosted.go | 字体/标志内嵌；动画仅在活动时请求下一帧 |
@@ -16,7 +26,7 @@
 
 ## 模型和线程
 
-question.Answer 和 response.Choice 的第 i 位表示原始 Options[i]。OptionOrder 是显示位置到原始索引的排列；历史/PDF 使用保存的映射。不要为了选项打乱直接重排题目内容。
+domain.Question.Answer 和 domain.Response.Choice 的第 i 位表示原始 Options[i]。OptionOrder 是显示位置到原始索引的排列；历史/PDF 使用保存的映射。不要为了选项打乱直接重排题目内容。
 
 app 字段在 UI 线程修改。后台先捕获不可变数据或持久服务，磁盘操作交给 libraryJobs，结果经 publish 返回。不要捕获跨帧 ui.Element；构建可能在同一帧重复执行，因此渲染函数不得无条件发起 I/O。数据库单连接使用时，查询游标必须关闭再发起下一次查询。
 
@@ -36,6 +46,8 @@ questions/practice 通过外键关联；settings 保存版本化偏好和历史�
 
 ## 验证与提交
 
+开发启动使用 go run ./cmd/quesora。
+
 在 Windows、CGO_ENABLED=0 下运行 go test ./... 和 go tool mygo vet .；python build-preview.py 会在隔离目录执行完整构建、资源和离屏检查。仅注释批次应保持去注释后的 Go AST 不变，不混入业务改动。
 
 UI 回归使用 ui.NewTester 覆盖焦点、按键、重复帧和最小窗口；截图用于查看布局。实际窗口、Mica、输入法和真实题库验收由用户执行，不能用离屏通过替代。
@@ -52,11 +64,11 @@ UI 回归使用 ui.NewTester 覆盖焦点、按键、重复帧和最小窗口；
 
 更新在 update.go/update_download.go/update_ui.go/update_runtime.go：公开元数据只决定候选，固定仓库/产物名/HTTPS 重定向名单和 SHA-256 均通过才允许安装；测试注入下载/进程替身。实际安装在用户确认后交给可见安装器，不在自动化测试中启动真实安装。版本、来源 URL、取消、限流和缓存被修改均需回归。
 
-resources/icon-design.json 记录图标导出参数。qa/icons 使用用户提供的高分辨率原图，所有尺寸和标题栏均保留完整题卡、A/B/C/D、Q 气泡、颜色和布局，只等比缩放并裁切外部圆角，不重绘或按尺寸更换标志。执行 JSON 中的 export.command 同时重建 icon.png、app-icon.png 和 icon-frames/，不要手动缩小已有 PNG。build-preview.py 在隔离目录重新生成全部帧，qa/winres 使用 NewIconFromImages 直接嵌入，不进行二次缩放；qa/verify_executable.py 对实际 PE 帧与导出 PNG 逐字节比较。
+resources/icon-design.json 记录图标导出参数。qa/icons 使用用户提供的高分辨率原图，所有尺寸和标题栏均保留完整题卡、A/B/C/D、Q 气泡、颜色和布局，只等比缩放并裁切外部圆角，不重绘或按尺寸更换标志。执行 JSON 中的 export.command 同时重建 resources/icon.png、internal/assets/resources/app-icon.png 和 resources/icon-frames/，不要手动缩小已有 PNG。build-preview.py 在隔离目录重新生成全部帧，qa/winres 使用 NewIconFromImages 直接嵌入，不进行二次缩放；qa/verify_executable.py 对实际 PE 帧与导出 PNG 逐字节比较。
 
 AI 维护边界：ai_provider.go 绑定五厂商官方 HTTPS 来源，禁止认证请求重定向，不记录服务原始错误或密钥；ai_config.go/ai_secret_windows.go 独立加密配置。ai_state.go 用任务世代拒绝取消后的迟到响应，短暂的配置原子写入不能取消。ai_tasks.go 先完整预览再事务入库，ai_grading.go 只更新练习记录，考试保持本地评分。Beta 默认关闭并在每个网络任务入口检查。
 
-appearance.go 将持久化外观选择与实时 dark 配色分开，MyGo OnUpdated 在 UI 线程同步系统变化，窗口关闭解除监听；学习设置版本 2 保留版本 1 的浅/深色选择。MyGo 固定 v0.10.0，升级前阅读其迁移指南并运行 migrate-ui 预览、mygo vet 和全部测试。
+internal/desktop/appearance.go 将持久化外观选择与实时 dark 配色分开，MyGo OnUpdated 在 UI 线程同步系统变化，窗口关闭解除监听；学习设置版本 2 保留版本 1 的浅/深色选择。MyGo 固定 v0.10.0，升级前阅读其迁移指南并运行 migrate-ui 预览、mygo vet 和全部测试。
 
 Windows 图标缓存：安装器给桌面/开始菜单快捷方式指定 icons/quesora-<version>.ico 并通知 Shell 刷新，不能只覆盖同一路径 EXE 后期待缓存失效。运行窗口创建后用 SetIcon 设置完整题卡 PNG；不修改用户原图或用简化 Q 替代小尺寸。qa/installer_smoke.py 在临时 runner 验证真实快捷方式的 IconLocation 和 ICO 内容，不在开发机安装/重装。
 

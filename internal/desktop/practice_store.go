@@ -1,0 +1,107 @@
+// 练习记录、重要标记和重置的持久化；考试/已保存错题本快照不由练习重置删除。
+
+package desktop
+
+import (
+	"database/sql"
+	"encoding/json"
+	"errors"
+
+	"github.com/ispacewang/quesora-native/internal/domain"
+)
+
+// loadPractice 先关闭结果集再读取重要标记，避免单连接仓库被未释放游标阻塞。
+func (s *questionStore) loadPractice() (map[string]domain.Response, map[string]bool, error) {
+	answers := map[string]domain.Response{}
+	stars := map[string]bool{}
+	rows, err := s.db.Query("SELECT question_id,payload FROM practice")
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id, data string
+		if err = rows.Scan(&id, &data); err != nil {
+			return nil, nil, err
+		}
+		var r domain.Response
+		if err = json.Unmarshal([]byte(data), &r); err != nil {
+			return nil, nil, err
+		}
+		answers[id] = r
+	}
+	if err = rows.Err(); err != nil {
+		return nil, nil, err
+	}
+	rows.Close()
+	var raw string
+	err = s.db.QueryRow("SELECT value FROM settings WHERE key='stars'").Scan(&raw)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, nil, err
+	}
+	if err == nil {
+		if err = json.Unmarshal([]byte(raw), &stars); err != nil {
+			return nil, nil, err
+		}
+	}
+	return answers, stars, nil
+}
+
+// saveResponse 覆盖最近作答，并保留队列中已提交的备注，兼容没有 Note 字段的旧记录。
+func (s *questionStore) saveResponse(id string, r domain.Response) error {
+	payload, err := json.Marshal(r)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.Exec(`INSERT INTO practice(question_id,payload) VALUES(?,?) ON CONFLICT(question_id) DO UPDATE SET payload=CASE
+ WHEN json_type(practice.payload,'$.Note') IS NULL THEN excluded.payload
+ ELSE json_set(excluded.payload,'$.Note',json_extract(practice.payload,'$.Note')) END`, id, string(payload))
+	return err
+}
+func (a *app) saveResponse(id string, r domain.Response) {
+	if a.store == nil {
+		return
+	}
+	s := a.store
+	a.enqueue(func() {
+		if err := s.saveResponse(id, r); err != nil {
+			a.publish(func() { a.libraryStatus = "答题记录保存失败：" + err.Error() })
+		}
+	})
+}
+func (a *app) toggleStar(id string) {
+	a.starred[id] = !a.starred[id]
+	if a.store == nil {
+		return
+	}
+	raw, err := json.Marshal(a.starred)
+	if err != nil {
+		return
+	}
+	s := a.store
+	a.enqueue(func() {
+		_, err := s.db.Exec("INSERT INTO settings(key,value) VALUES('stars',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", string(raw))
+		if err != nil {
+			a.publish(func() { a.libraryStatus = "重要题目标记保存失败：" + err.Error() })
+		}
+	})
+}
+
+// resetPractice 只清空日常练习；题库、重要标记和保存的考试/错题本不受影响。
+func (a *app) resetPractice() {
+	a.practiceRevision++
+	a.savedWrong = false
+	a.exportOpen = false
+	a.answers = map[string]domain.Response{}
+	a.onlyWrong = false
+	a.navigate(0)
+	if a.store != nil {
+		s := a.store
+		a.enqueue(func() {
+			_, err := s.db.Exec("DELETE FROM practice")
+			if err != nil {
+				a.publish(func() { a.libraryStatus = "重置记录失败：" + err.Error() })
+			}
+		})
+	}
+}

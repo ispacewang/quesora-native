@@ -3,5 +3,6 @@
   "identifier": "com.quesora.native.preview",
   "version": "0.1.0",
   "out": "build",
-  "icon": "resources/icon.png"
+  "icon": "resources/icon.png",
+  "main": "./cmd/quesora"
 }
