@@ -30,6 +30,8 @@ cd quesora-native
 python build-preview.py
 ```
 
+开发运行使用 `go run ./cmd/quesora`，目录职责见 [开发导览](docs/development.md)。
+
 产物位于 build/release/。构建安装包需安装 Inno Setup 6.7.1+，然后运行 `python build-preview.py --installer`。
 
 ## 文档与许可证

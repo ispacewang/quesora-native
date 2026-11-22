@@ -2,10 +2,10 @@
   "description": "所有尺寸均保留用户原图的橙色渐变、白色 A/B/C/D 题卡和 Q 气泡，仅等比缩放并裁切外部圆角。",
   "source": "User-provided 1024x1024 high-resolution reference; no generative redraw",
   "master": "icon-source.png",
-  "runtime": "app-icon.png",
+  "runtime": "../internal/assets/resources/app-icon.png",
   "windows": "icon.png",
   "export": {
-    "command": "go run ./qa/icons resources/icon-source.png resources/icon.png resources/app-icon.png resources/icon-frames",
+    "command": "go run ./qa/icons resources/icon-source.png resources/icon.png internal/assets/resources/app-icon.png resources/icon-frames",
     "cropInset": 0,
     "padding": 0.045,
     "cornerRadius": 0.2,

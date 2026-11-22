@@ -82,6 +82,8 @@ third_party/xls 是 Apache-2.0 本地兼容修复副本，见 QUESORA_CHANGES.md
 
 ## 图标与维护
 
+源码入口为 cmd/quesora，直接运行可用 go run ./cmd/quesora。目录职责与包依赖见开发导览。
+
 新图标按用户参考制作橙色圆角矩形题卡/Q 气泡，透明边界由 qa/icons 导出规范固定，Windows/标题栏/安装器使用同一设计。源码注释、数据所有权和开发流程见 [维护导览](development.md)。
 
 ## 外观与 AI Beta

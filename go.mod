@@ -1,4 +1,4 @@
-module hello
+module github.com/ispacewang/quesora-native
 
 go 1.27.3
 
