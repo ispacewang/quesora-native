@@ -12,20 +12,21 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"github.com/ispacewang/quesora-native/internal/buildinfo"
+	"github.com/ispacewang/quesora-native/internal/updater"
+	// updateState 保存窗口线程上的更新状态及可注入系统边界；后台通过 generation 检查后发布不可变结果。
 )
 
-// updateState 保存窗口线程上的更新状态及可注入系统边界；后台通过 generation 检查后发布不可变结果。
 type updateState struct {
 	retryAfter, lastChecked                          time.Time
 	busy, installing, failed, confirmOpen, installed bool
 	message                                          string
 	received, total                                  int64
 	generation                                       uint64
-	candidate                                        *updateCandidate
-	downloaded                                       *downloadedUpdate
+	candidate                                        *updater.Candidate
+	downloaded                                       *updater.Download
 	cancel                                           context.CancelFunc
-	fetch                                            func(context.Context) (*updateCandidate, error)
-	download                                         func(context.Context, updateCandidate, func(int64, int64)) (downloadedUpdate, error)
+	fetch                                            func(context.Context) (*updater.Candidate, error)
+	download                                         func(context.Context, updater.Candidate, func(int64, int64)) (updater.Download, error)
 	launch                                           func(string) error
 	close                                            func()
 }
@@ -52,7 +53,7 @@ func (a *app) finishUpdate(generation uint64, err error) bool {
 		a.updates.cancel = nil
 	}
 	if err != nil {
-		var rate *updateRateLimitError
+		var rate *updater.RateLimitError
 		if errors.As(err, &rate) {
 			a.updates.retryAfter = rate.Until
 		}
@@ -72,7 +73,7 @@ func (a *app) checkForUpdate() {
 	}
 	if time.Now().Before(a.updates.retryAfter) {
 		a.updates.failed = true
-		a.updates.message = (&updateRateLimitError{Until: a.updates.retryAfter}).Error()
+		a.updates.message = (&updater.RateLimitError{Until: a.updates.retryAfter}).Error()
 		return
 	}
 	// Repeated manual checks reuse a recent success and retain an already verified installer.
@@ -152,7 +153,7 @@ func (a *app) confirmUpdateInstall() {
 	a.updates.message = "正在备份数据并复核安装包…"
 	downloaded, launch, store := *a.updates.downloaded, a.updates.launch, a.store
 	if !a.enqueue(func() {
-		err := verifyDownloadedUpdate(downloaded)
+		err := updater.VerifyDownloaded(downloaded)
 		if err == nil {
 			safety := filepath.Join(filepath.Dir(store.path), "backups", "before-update-"+time.Now().UTC().Format("20060102T150405.000000000")+".db")
 			err = store.backupTo(safety)
@@ -194,7 +195,7 @@ func (a *app) updateSection(c *ui.Context) {
 	ui.Row(c).FillWidth().Gap(8).Wrap().Children(func() {
 		control(c, "check-update", "检查更新", historyIcon, outlineButton, a.checkForUpdate).Label("检查更新").Disabled(a.updates.busy || a.updates.installing || a.updates.fetch == nil)
 		services := c.Services()
-		control(c, "update-release-page", "发布页面", nil, ghostButton, func() { services.OpenURL("https://github.com/" + updateRepository + "/releases") }).Label("更新发布页面")
+		control(c, "update-release-page", "发布页面", nil, ghostButton, func() { services.OpenURL("https://github.com/" + updater.Repository + "/releases") }).Label("更新发布页面")
 		if a.updates.busy {
 			control(c, "cancel-update", "取消", nil, outlineButton, a.cancelUpdate).Label("取消更新操作")
 		}

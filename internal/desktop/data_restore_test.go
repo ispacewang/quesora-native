@@ -2,6 +2,7 @@ package desktop
 
 import (
 	"encoding/json"
+	"github.com/ispacewang/quesora-native/internal/storage"
 	"os"
 	"path/filepath"
 	"strings"
@@ -54,11 +55,11 @@ func TestRestoreRejectsWrongCorruptAndLiveSources(t *testing.T) {
 	corrupt := filepath.Join(dir, "corrupt.db")
 	os.WriteFile(corrupt, []byte("not a database"), 0600)
 	wrong := filepath.Join(dir, "wrong.db")
-	db, err := openReadOnlyDatabase(live.path)
+	db, err := storage.OpenReadOnly(live.path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = snapshotDatabase(db, wrong, false); err != nil {
+	if err = storage.Snapshot(db, wrong, false); err != nil {
 		t.Fatal(err)
 	}
 	db.Close()

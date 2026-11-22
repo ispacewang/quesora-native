@@ -67,7 +67,7 @@ func (a *app) examView(c *ui.Context) {
 			ui.Scroll(c.Key("answer-card")).Width(left).Shrink(0).BorderWidth(0, 1, 0, 0).BorderColor(t.Border).Children(func() {
 				ui.Column(c).FillWidth().Padding(16).Gap(16).Children(func() {
 					ui.Text(c, "答题卡").FontSize(11).FontWeight(600).TextColor(t.TextMuted)
-					for _, kind := range examKinds {
+					for _, kind := range domain.QuestionKinds() {
 						var indices []int
 						for i, q := range e.Questions {
 							if q.Kind == kind {

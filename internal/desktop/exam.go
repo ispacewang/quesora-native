@@ -13,8 +13,6 @@ import (
 	"github.com/ispacewang/quesora-native/internal/domain"
 )
 
-var examKinds = []string{"单选题", "多选题", "判断题", "简答题", "填空题"}
-
 // examSettings 与组卷表单双向绑定；数值使用 float64 以保留 NaN 等无效输入供统一校验。
 type examSettings struct {
 	Bank    string
@@ -45,7 +43,7 @@ func newExamSession(qs []domain.Question, settings examSettings, stars map[strin
 	}
 
 	e := &examSession{ID: now.UTC().Format("20060102T150405.000000000"), Bank: settings.Bank, Minutes: int(settings.Minutes), Started: now, Deadline: now.Add(time.Duration(settings.Minutes) * time.Minute)}
-	for k, kind := range examKinds {
+	for k, kind := range domain.QuestionKinds() {
 		count := settings.Counts[k]
 
 		var pool []domain.Question
@@ -376,7 +374,7 @@ func validateExamSettings(settings examSettings) error {
 	}
 	for i, count := range settings.Counts {
 		if math.IsNaN(count) || math.IsInf(count, 0) || count < 0 || count > 100 || count != math.Trunc(count) {
-			return fmt.Errorf("%s数量应为 0–100 的整数", examKinds[i])
+			return fmt.Errorf("%s数量应为 0–100 的整数", domain.QuestionKinds()[i])
 		}
 	}
 	return nil

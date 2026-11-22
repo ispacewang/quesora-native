@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ispacewang/quesora-native/internal/domain"
 )
 
 func (a *app) examSetupDialog(c *ui.Context) {
@@ -46,7 +47,7 @@ func (a *app) examSetupDialog(c *ui.Context) {
 						})
 						// Grid keeps the last two fields the same width as the first three.
 						ui.Grid(c.Key("exam-count-grid")).FillWidth().Columns(3).Gap(12).Children(func() {
-							for i, kind := range examKinds {
+							for i, kind := range domain.QuestionKinds() {
 								ui.Column(c.Key(kind)).MinWidth(0).Gap(6).Children(func() {
 									available := status.Available[i]
 									ui.Row(c).FillWidth().Gap(4).AlignItems(ui.Center).Children(func() {

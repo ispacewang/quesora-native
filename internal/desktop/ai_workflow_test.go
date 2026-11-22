@@ -9,6 +9,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
+	"github.com/ispacewang/quesora-native/internal/ai"
 	"github.com/ispacewang/quesora-native/internal/domain"
 )
 
@@ -89,7 +90,7 @@ func TestAIUIProvidersAndFooterAccessibleInSmallWindow(t *testing.T) {
 	a.ai.Config.Enabled = true
 	a.openAI("settings")
 	tt := ui.NewTester(a.view, 800, 500)
-	for _, p := range aiProviders {
+	for _, p := range ai.Providers() {
 		if _, ok := tt.Find("AI服务商：" + p.Name); !ok {
 			t.Fatal("missing provider", p.Name)
 		}
@@ -198,7 +199,7 @@ func TestAIBetaTogglePersistsAndCancelsPendingRequest(t *testing.T) {
 	if !a.ai.Config.Enabled {
 		t.Fatal(a.ai.Message)
 	}
-	c, e := loadAIConfig(a.ai.Path)
+	c, e := ai.LoadConfig(a.ai.Path)
 	if e != nil || !c.Enabled {
 		t.Fatal("beta enable not persisted", e)
 	}
@@ -214,7 +215,7 @@ func TestAIBetaTogglePersistsAndCancelsPendingRequest(t *testing.T) {
 	if a.ai.Config.Enabled {
 		t.Fatal("beta stayed enabled")
 	}
-	c, e = loadAIConfig(a.ai.Path)
+	c, e = ai.LoadConfig(a.ai.Path)
 	if e != nil || c.Enabled {
 		t.Fatal("beta disable not persisted", e)
 	}
@@ -263,7 +264,7 @@ func TestAIDisableFromAssistantPersistsAndHidesEntrypoints(t *testing.T) {
 	click(t, tt, "关闭 AI")
 	pumpAI(t, a, updates)
 	tt.Frame()
-	c, e := loadAIConfig(a.ai.Path)
+	c, e := ai.LoadConfig(a.ai.Path)
 	if e != nil || c.Enabled || a.ai.Config.Enabled || a.ai.Open {
 		t.Fatal("AI disable not persisted or assistant still open", e)
 	}

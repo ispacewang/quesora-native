@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ispacewang/quesora-native/internal/domain"
 )
 
 func TestExamSetupFieldLayout(t *testing.T) {
@@ -15,7 +16,7 @@ func TestExamSetupFieldLayout(t *testing.T) {
 			a.openExamSetup()
 			tt := ui.NewTester(a.view, size[0], size[1])
 			var fields []ui.Rect
-			for _, kind := range examKinds {
+			for _, kind := range domain.QuestionKinds() {
 				r, ok := tt.Find("考试" + kind + "数量输入框")
 				if !ok || r.W < 90 {
 					t.Fatalf("%v %s %+v", size, kind, r)

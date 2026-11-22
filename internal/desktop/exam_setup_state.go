@@ -2,7 +2,11 @@
 
 package desktop
 
+import
+
 // One inventory pass supplies both the preview and every quantity label.
+"github.com/ispacewang/quesora-native/internal/domain"
+
 type examFormStatus struct {
 	Available         [5]int
 	Actual, Requested int
@@ -15,7 +19,7 @@ func (a *app) examSetupStatus() examFormStatus {
 	s := examFormStatus{}
 	for _, q := range a.questions {
 		if q.Bank == a.examForm.Bank {
-			for i, kind := range examKinds {
+			for i, kind := range domain.QuestionKinds() {
 				if q.Kind == kind {
 					s.Available[i]++
 					break

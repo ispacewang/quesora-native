@@ -7,6 +7,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
+	"github.com/ispacewang/quesora-native/internal/ai"
 	"github.com/ispacewang/quesora-native/internal/assets"
 	"github.com/ispacewang/quesora-native/internal/domain"
 )
@@ -18,7 +19,7 @@ var aiIconsOnce sync.Once
 func aiProviderIcon(id string) *ui.SVG {
 	aiIconsOnce.Do(func() {
 		aiBrandIcons = map[string]*ui.SVG{}
-		for _, p := range aiProviders {
+		for _, p := range ai.Providers() {
 			raw, e := aiIconFiles.ReadFile("resources/providers/" + p.ID + ".svg")
 			if e == nil {
 				aiBrandIcons[p.ID] = ui.MustParseSVG(raw)
@@ -48,7 +49,7 @@ func (a *app) aiDialogs(c *ui.Context) {
 			icon(c, aiSparkIcon, 20)
 			ui.Text(c, "AI 助手 · Beta").FontSize(18).FontWeight(600)
 			ui.Spacer(c)
-			p, _ := providerByID(a.ai.Config.Selected)
+			p, _ := ai.ProviderByID(a.ai.Config.Selected)
 			ui.Icon(c, aiProviderIcon(p.ID)).Size(18, 18)
 			ui.Text(c, p.Name).FontSize(12).TextColor(t.TextMuted)
 			if a.ai.Config.Enabled {
@@ -129,7 +130,7 @@ func (a *app) aiSettingsBody(c *ui.Context) {
 	t := c.Theme()
 	ui.Text(c, "选择服务商").FontSize(12).FontWeight(500)
 	ui.Grid(c.Key("ai-providers")).FillWidth().Columns(5).Gap(8).Children(func() {
-		for _, p := range aiProviders {
+		for _, p := range ai.Providers() {
 			box := ui.ButtonBase(c.Key(p.ID)).Label("AI服务商："+p.Name).MinWidth(0).Height(72).Radius(cornerRadius(c, 72)).Border(1, t.Border).Background(t.Background).OnClick(func() { a.selectAIProvider(p.ID) })
 			if p.ID == a.ai.EditorProvider {
 				box.BorderColor(t.Accent).Background(t.Accent.Alpha(.06))
@@ -147,7 +148,7 @@ func (a *app) aiSettingsBody(c *ui.Context) {
 	aiField(c, "模型名称 / 推理接入点 ID", &a.ai.Editor.Model, false)
 	aiField(c, "API Key", &a.ai.Editor.Key, true)
 	ui.Text(c, "密钥仅使用 Windows 当前用户加密保存在本机，不包含在题库备份中。切换厂商后请分别保存配置。").FillWidth().FontSize(11).LineHeight(1.6).TextColor(t.TextMuted)
-	p, _ := providerByID(a.ai.EditorProvider)
+	p, _ := ai.ProviderByID(a.ai.EditorProvider)
 	if p.ID == "qwen" {
 		ui.Text(c, "千问密钥与地域对应；可填写百炼控制台提供的业务空间专属地址。").FillWidth().FontSize(11).TextColor(t.TextMuted)
 	}
@@ -169,7 +170,7 @@ func (a *app) aiGenerationProviderSelect(c *ui.Context) {
 		trigger.BorderColor(t.Accent)
 	}
 	trigger.Children(func() {
-		p, _ := providerByID(a.ai.Config.Selected)
+		p, _ := ai.ProviderByID(a.ai.Config.Selected)
 		ui.Row(c).FillWidth().MinWidth(0).Gap(8).AlignItems(ui.Center).Children(func() {
 			ui.Icon(c, aiProviderIcon(p.ID)).Size(18, 18).Shrink(0)
 			ui.Text(c, p.Name).Grow(1).MinWidth(0).SingleLine().FontSize(13)
@@ -179,7 +180,7 @@ func (a *app) aiGenerationProviderSelect(c *ui.Context) {
 	sel.Popup(func(panel ui.Element) {
 		panel.Padding(4).Border(1, t.Border).Radius(cornerRadius(c, 80)).Clip().Background(t.Background).Shadow(0, 4, 12, 0, ui.RGBA(0, 0, 0, .12))
 		ui.Scroll(c).FillWidth().MaxHeight(220).Children(func() {
-			for _, p := range aiProviders {
+			for _, p := range ai.Providers() {
 				item := sel.Item(p.ID).Label("出题服务商："+p.Name).FillWidth().Padding(8, 10)
 				if item.Highlighted() {
 					item.Background(t.Surface)

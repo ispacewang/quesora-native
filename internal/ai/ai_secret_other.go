@@ -1,6 +1,6 @@
 //go:build !windows
 
-package desktop
+package ai
 
 import "errors"
 

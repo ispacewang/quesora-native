@@ -9,17 +9,18 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/ispacewang/quesora-native/internal/ai"
 	"github.com/ispacewang/quesora-native/internal/domain"
+	// aiState 持有跨帧模型和可取消任务，不保存 UI Element 或 Context。
 )
 
-// aiState 持有跨帧模型和可取消任务，不保存 UI Element 或 Context。
 type aiState struct {
 	EditorAuto                                 bool
 	Open, Busy, Saving, Error                  bool
 	Tab, Task, Message, Path                   string
-	Config                                     aiConfig
+	Config                                     ai.Config
 	EditorProvider                             string
-	Editor                                     aiProfile
+	Editor                                     ai.Profile
 	Client                                     *http.Client
 	cancel                                     context.CancelFunc
 	epoch                                      uint64
@@ -27,7 +28,7 @@ type aiState struct {
 	Preview                                    []domain.Question
 	PreviewIndex                               int
 	Result                                     string
-	Judgment                                   *aiJudgment
+	Judgment                                   *ai.Judgment
 	JudgeQuestion                              domain.Question
 	JudgeResponse                              domain.Response
 }
@@ -36,20 +37,20 @@ type aiTaskResult struct {
 	Material  *aiMaterial
 	Text      string
 	Questions []domain.Question
-	Judgment  *aiJudgment
-	Config    *aiConfig
+	Judgment  *ai.Judgment
+	Config    *ai.Config
 }
 
 func newAIState() aiState {
-	c := defaultAIConfig()
-	return aiState{Config: c, EditorProvider: c.Selected, Editor: c.Profiles[c.Selected], Client: newAIHTTPClient(), Count: "10", Tab: "generate"}
+	c := ai.DefaultConfig()
+	return aiState{Config: c, EditorProvider: c.Selected, Editor: c.Profiles[c.Selected], Client: ai.NewHTTPClient(), Count: "10", Tab: "generate"}
 }
 func (a *app) configureAI() {
 	if a.store == nil {
 		return
 	}
 	a.ai.Path = filepath.Join(filepath.Dir(a.store.path), "ai-settings.bin")
-	c, e := loadAIConfig(a.ai.Path)
+	c, e := ai.LoadConfig(a.ai.Path)
 	if e != nil {
 		a.libraryStatus = e.Error()
 		return
@@ -91,7 +92,7 @@ func (a *app) selectAIGenerationProvider(id string) {
 	if a.ai.Busy || a.ai.Saving || !a.ai.Config.Enabled {
 		return
 	}
-	if _, ok := providerByID(id); !ok {
+	if _, ok := ai.ProviderByID(id); !ok {
 		return
 	}
 	a.ai.Config.Selected = id
@@ -99,13 +100,13 @@ func (a *app) selectAIGenerationProvider(id string) {
 	a.ai.Error = false
 }
 
-func (a *app) aiReady() (string, aiProfile, error) {
+func (a *app) aiReady() (string, ai.Profile, error) {
 	if !a.ai.Config.Enabled {
-		return "", aiProfile{}, errors.New("AI（Beta）已关闭，请先在设置中启用")
+		return "", ai.Profile{}, errors.New("AI（Beta）已关闭，请先在设置中启用")
 	}
 	id := a.ai.Config.Selected
 	p := a.ai.Config.Profiles[id]
-	return id, p, validateAIProfile(id, p)
+	return id, p, ai.ValidateProfile(id, p)
 }
 
 // startAITask invalidates late completions after cancellation/replacement; workers never retain UI elements.
@@ -219,12 +220,12 @@ func (a *app) closeAI() {
 // saveAISettings 先验证编辑副本；成功加密写入后才替换活动配置。
 func (a *app) saveAISettings() {
 	id, p, filename := a.ai.EditorProvider, a.ai.Editor, a.ai.Path
-	if e := validateAIProfile(id, p); e != nil {
+	if e := ai.ValidateProfile(id, p); e != nil {
 		a.ai.Error = true
 		a.ai.Message = e.Error()
 		return
 	}
-	c := defaultAIConfig()
+	c := ai.DefaultConfig()
 	c.Selected = id
 	c.Enabled = a.ai.Config.Enabled
 	c.AutoJudge = a.ai.EditorAuto
@@ -233,7 +234,7 @@ func (a *app) saveAISettings() {
 	}
 	c.Profiles[id] = p
 	a.startAITask("save", func(context.Context) (aiTaskResult, error) {
-		if e := saveAIConfig(filename, c); e != nil {
+		if e := ai.SaveConfig(filename, c); e != nil {
 			return aiTaskResult{}, e
 		}
 		return aiTaskResult{Text: "配置已使用 Windows 当前用户加密保存", Config: &c}, nil
@@ -242,7 +243,7 @@ func (a *app) saveAISettings() {
 func (a *app) testAIConnection() {
 	id, p, client := a.ai.EditorProvider, a.ai.Editor, a.ai.Client
 	a.startAITask("test", func(ctx context.Context) (aiTaskResult, error) {
-		_, e := aiChat(ctx, client, id, p, "你是连接测试助手。", "只回复 OK。", 1024)
+		_, e := ai.Chat(ctx, client, id, p, "你是连接测试助手。", "只回复 OK。", 1024)
 		return aiTaskResult{Text: "连接成功，当前密钥和模型可用"}, e
 	})
 }
@@ -250,7 +251,7 @@ func (a *app) forgetAIProvider() {
 	if a.ai.Busy || a.ai.Saving {
 		return
 	}
-	c := defaultAIConfig()
+	c := ai.DefaultConfig()
 	c.Selected = a.ai.Config.Selected
 	c.Enabled = a.ai.Config.Enabled
 	c.AutoJudge = a.ai.Config.AutoJudge
@@ -262,7 +263,7 @@ func (a *app) forgetAIProvider() {
 	c.Profiles[a.ai.EditorProvider] = p
 	filename := a.ai.Path
 	a.startAITask("forget", func(context.Context) (aiTaskResult, error) {
-		if e := saveAIConfig(filename, c); e != nil {
+		if e := ai.SaveConfig(filename, c); e != nil {
 			return aiTaskResult{}, e
 		}
 		return aiTaskResult{Text: "已删除该厂商的已保存密钥", Config: &c}, nil
@@ -287,7 +288,7 @@ func (a *app) aiStatusText() string {
 	if a.ai.Message != "" {
 		return a.ai.Message
 	}
-	p, _ := providerByID(a.ai.Config.Selected)
+	p, _ := ai.ProviderByID(a.ai.Config.Selected)
 	return fmt.Sprintf("当前服务：%s · %s", p.Name, a.ai.Config.Profiles[p.ID].Model)
 }
 
@@ -300,7 +301,7 @@ func (a *app) toggleAIFeatures() {
 	if a.ai.Busy {
 		a.cancelAITask()
 	}
-	c := defaultAIConfig()
+	c := ai.DefaultConfig()
 	c.Selected = a.ai.Config.Selected
 	c.AutoJudge = a.ai.Config.AutoJudge
 	c.Enabled = enabled
@@ -309,7 +310,7 @@ func (a *app) toggleAIFeatures() {
 	}
 	filename := a.ai.Path
 	a.startAITask("toggle", func(context.Context) (aiTaskResult, error) {
-		if e := saveAIConfig(filename, c); e != nil {
+		if e := ai.SaveConfig(filename, c); e != nil {
 			return aiTaskResult{}, e
 		}
 		text := "AI（Beta）已关闭"

@@ -3,6 +3,7 @@
 ## 0.1.0-preview.8 — 开发中
 
 ### 架构维护
+- 第二批提取 AI、更新、PDF 生成与 SQLite 快照服务，界面继续负责异步任务和交互状态。
 - 启动入口迁入 cmd/quesora，拆分 desktop、domain、importer、assets 和 buildinfo 包，模块路径改为正式仓库路径。
 - 构建同步处理子包、Windows 资源、内嵌文件和版本注入，MyGo 命令入口使用新 main 配置。
 

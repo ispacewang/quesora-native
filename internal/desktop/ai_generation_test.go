@@ -10,6 +10,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
+	"github.com/ispacewang/quesora-native/internal/ai"
 	"github.com/ispacewang/quesora-native/internal/domain"
 )
 
@@ -235,7 +236,7 @@ func TestAIGenerationPreviousContextIsBoundedAndDoesNotIncludeAnswers(t *testing
 	for n := 0; n < 500; n++ {
 		qs = append(qs, domain.Question{Kind: "单选题", Prompt: fmt.Sprint(n) + strings.Repeat("长题干", 1000), Options: []string{strings.Repeat("长选项", 1000), "另一个选项"}, TextAnswer: "不应发送的答案", Explanation: "不应发送的解析"})
 	}
-	hints := aiPreviousQuestions(qs)
+	hints := ai.PreviousQuestions(qs)
 	data, e := json.Marshal(hints)
 	if e != nil || len(data) > 48000 || len(hints) == 0 || len(hints) >= 500 {
 		t.Fatal("unbounded or empty history", len(data), len(hints), e)
@@ -246,7 +247,7 @@ func TestAIGenerationPreviousContextIsBoundedAndDoesNotIncludeAnswers(t *testing
 }
 
 func TestAIGenerationPageSelectsEveryConfiguredProvider(t *testing.T) {
-	for _, provider := range aiProviders {
+	for _, provider := range ai.Providers() {
 		t.Run(provider.ID, func(t *testing.T) {
 			a, updates := generationTestApp(t, 1)
 			profile := a.ai.Config.Profiles[provider.ID]

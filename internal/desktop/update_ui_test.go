@@ -13,6 +13,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"github.com/ispacewang/quesora-native/internal/buildinfo"
+	"github.com/ispacewang/quesora-native/internal/updater"
 )
 
 func drainUpdate(t *testing.T, a *app, updates <-chan func()) {
@@ -38,16 +39,16 @@ func TestUpdateNativeConfirmationAndSafeInstallHandoff(t *testing.T) {
 	a.dispatch = func(fn func()) { queue <- fn }
 	a.jobs = newLibraryJobs()
 	defer a.jobs.close()
-	c, err := selectUpdateRelease([]updateRelease{updateFixture("0.99.0-preview.1")}, buildinfo.Version)
+	c, err := updater.SelectRelease([]updater.Release{updateFixture("0.99.0-preview.1")}, buildinfo.Version)
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.updates.fetch = func(context.Context) (*updateCandidate, error) { return c, nil }
+	a.updates.fetch = func(context.Context) (*updater.Candidate, error) { return c, nil }
 	payload := []byte("MZ-fake-installer-not-executed")
 	name := filepath.Join(t.TempDir(), "setup.exe")
 	os.WriteFile(name, payload, 0600)
-	a.updates.download = func(context.Context, updateCandidate, func(int64, int64)) (downloadedUpdate, error) {
-		return downloadedUpdate{Path: name, Size: int64(len(payload)), SHA256: fmt.Sprintf("%x", sha256.Sum256(payload))}, nil
+	a.updates.download = func(context.Context, updater.Candidate, func(int64, int64)) (updater.Download, error) {
+		return updater.Download{Path: name, Size: int64(len(payload)), SHA256: fmt.Sprintf("%x", sha256.Sum256(payload))}, nil
 	}
 	launched, closed := false, false
 	a.updates.launch = func(path string) error {
@@ -91,7 +92,7 @@ func TestUpdateCancellationHasNoFailureState(t *testing.T) {
 	a := newApp()
 	queue := make(chan func(), 8)
 	a.dispatch = func(fn func()) { queue <- fn }
-	a.updates.fetch = func(ctx context.Context) (*updateCandidate, error) { <-ctx.Done(); return nil, ctx.Err() }
+	a.updates.fetch = func(ctx context.Context) (*updater.Candidate, error) { <-ctx.Done(); return nil, ctx.Err() }
 	a.checkForUpdate()
 	a.cancelUpdate()
 	drainUpdate(t, a, queue)
@@ -105,9 +106,9 @@ func TestUpdateRateLimitPreventsImmediateRetry(t *testing.T) {
 	queue := make(chan func(), 8)
 	a.dispatch = func(fn func()) { queue <- fn }
 	calls := 0
-	a.updates.fetch = func(context.Context) (*updateCandidate, error) {
+	a.updates.fetch = func(context.Context) (*updater.Candidate, error) {
 		calls++
-		return nil, &updateRateLimitError{Until: time.Now().Add(time.Hour)}
+		return nil, &updater.RateLimitError{Until: time.Now().Add(time.Hour)}
 	}
 	a.checkForUpdate()
 	drainUpdate(t, a, queue)

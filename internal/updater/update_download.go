@@ -1,5 +1,5 @@
 // 下载到私有临时文件并校验官方 SHA-256，校验成功后才发布可执行安装器路径。
-package desktop
+package updater
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-type downloadedUpdate struct {
+type Download struct {
 	Path, SHA256 string
 	Size         int64
 }
@@ -58,13 +58,13 @@ func (w *updateProgressWriter) Write(p []byte) (int, error) {
 	return n, e
 }
 
-// downloadUpdate 不执行文件。取消、长度不符或哈希失败会移除临时内容，已有完整缓存不受影响。
-func downloadUpdate(ctx context.Context, client *http.Client, c updateCandidate, cache string, progress func(int64, int64)) (downloadedUpdate, error) {
-	var result downloadedUpdate
+// DownloadInstaller 不执行文件。取消、长度不符或哈希失败会移除临时内容，已有完整缓存不受影响。
+func DownloadInstaller(ctx context.Context, client *http.Client, c Candidate, cache string, progress func(int64, int64)) (Download, error) {
+	var result Download
 	if e := ctx.Err(); e != nil {
 		return result, e
 	}
-	trusted, e := candidateFromRelease(updateRelease{Tag: c.Tag, Assets: []updateAsset{c.Installer, c.Checksums}})
+	trusted, e := candidateFromRelease(Release{Tag: c.Tag, Assets: []Asset{c.Installer, c.Checksums}})
 	if e != nil {
 		return result, e
 	}
@@ -123,11 +123,11 @@ func downloadUpdate(ctx context.Context, client *http.Client, c updateCandidate,
 	if e = os.Rename(name, target); e != nil {
 		return result, e
 	}
-	return downloadedUpdate{Path: target, SHA256: got, Size: n}, nil
+	return Download{Path: target, SHA256: got, Size: n}, nil
 }
 
-// verifyDownloadedUpdate 在启动前再次检查文件，拒绝下载后被替换/修改的缓存内容。
-func verifyDownloadedUpdate(d downloadedUpdate) error {
+// VerifyDownloaded 在启动前再次检查文件，拒绝下载后被替换/修改的缓存内容。
+func VerifyDownloaded(d Download) error {
 	info, e := os.Lstat(d.Path)
 	if e != nil {
 		return e

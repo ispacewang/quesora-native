@@ -1,5 +1,5 @@
 // AI 配置独立于题库备份：含 Key 的整个配置仅以 Windows 当前用户保护的密文落盘。
-package desktop
+package ai
 
 import (
 	"encoding/json"
@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 )
 
-// saveAIConfig 先生成密文并同步临时文件，最后原子替换；失败保留旧配置。
-func saveAIConfig(filename string, c aiConfig) error {
+// SaveConfig 先生成密文并同步临时文件，最后原子替换；失败保留旧配置。
+func SaveConfig(filename string, c Config) error {
 	if filename == "" {
 		return errors.New("AI 配置目录不可用")
 	}
@@ -46,9 +46,9 @@ func saveAIConfig(filename string, c aiConfig) error {
 	return nil
 }
 
-// loadAIConfig 限制文件大小，无法解密或损坏时明确报错，不尝试明文回退。
-func loadAIConfig(filename string) (aiConfig, error) {
-	c := defaultAIConfig()
+// LoadConfig 限制文件大小，无法解密或损坏时明确报错，不尝试明文回退。
+func LoadConfig(filename string) (Config, error) {
+	c := DefaultConfig()
 	info, e := os.Stat(filename)
 	if os.IsNotExist(e) {
 		return c, nil
@@ -70,16 +70,16 @@ func loadAIConfig(filename string) (aiConfig, error) {
 	if e != nil {
 		return c, errors.New("AI 配置无法解密，请在当前 Windows 用户下重新配置")
 	}
-	var loaded aiConfig
+	var loaded Config
 	if json.Unmarshal(raw, &loaded) != nil {
 		return c, errors.New("AI 配置损坏，请重新配置")
 	}
 	c.Enabled = loaded.Enabled
 	c.AutoJudge = loaded.AutoJudge
-	if _, ok := providerByID(loaded.Selected); ok {
+	if _, ok := ProviderByID(loaded.Selected); ok {
 		c.Selected = loaded.Selected
 	}
-	for _, p := range aiProviders {
+	for _, p := range providers {
 		if v, ok := loaded.Profiles[p.ID]; ok {
 			c.Profiles[p.ID] = v
 		}
