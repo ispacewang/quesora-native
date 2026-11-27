@@ -8,6 +8,7 @@ require (
 	github.com/egoist/mygo v0.10.0
 	github.com/extrame/xls v0.0.1
 	github.com/go-pdf/fpdf v0.9.0
+	github.com/go-tex/math v0.51.0
 	github.com/ledongthuc/pdf v0.0.0-20261020125853-5e46805f718e
 	github.com/xuri/excelize/v2 v2.11.1
 	golang.org/x/image v0.46.0
@@ -19,8 +20,10 @@ require (
 require (
 	github.com/ProtonMail/go-crypto v1.4.1 // indirect
 	github.com/cloudflare/circl v1.6.2 // indirect
+	github.com/dsnet/compress v0.0.2-0.20230904184137-39efe44ab707 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/ebitengine/purego v0.11.2 // indirect
+	github.com/go-opentype/opentype v0.25.0 // indirect
 	github.com/go-text/typesetting v0.3.5 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/klauspost/compress v1.18.6 // indirect

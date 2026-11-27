@@ -15,7 +15,7 @@ from qa.installer import build_installer
 
 ROOT = pathlib.Path(__file__).resolve().parent
 VERSION_RE = r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?"
-SCENES = ["ai-settings", "ai-beta-off", "ai-generate", "ai-preview", "ai-diagnose", "restore", "update", "settings", "history", "empty", "unselected", "multi", "judge", "fill", "short", "selected", "correct", "wrong", "mistake-note", "important", "exam", "exam-result", "exam-setup", "exam-setup-empty", "many-banks"]
+SCENES = ["ai-settings", "ai-beta-off", "ai-generate", "ai-preview", "ai-diagnose", "restore", "update", "settings", "history", "math", "math-exam", "empty", "unselected", "multi", "judge", "fill", "short", "selected", "correct", "wrong", "mistake-note", "important", "exam", "exam-result", "exam-setup", "exam-setup-empty", "many-banks"]
 
 
 def build_version(value):
@@ -46,7 +46,7 @@ def module_licenses(module_root, target, env):
             continue
         dest = target / module["Path"].replace("/", "_")
         for item in pathlib.Path(directory).iterdir():
-            if item.is_file() and item.name.upper().startswith(("LICENSE", "COPYING", "NOTICE")):
+            if item.is_file() and (item.name.upper().startswith(("LICENSE", "COPYING", "NOTICE")) or item.name == "STIXTwoMath-OFL.txt"):
                 dest.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(item, dest / item.name)
 

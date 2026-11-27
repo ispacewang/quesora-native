@@ -253,16 +253,16 @@ func (a *app) aiPreviewBody(c *ui.Context) {
 		control(c, "preview-prev", "上一题", leftIcon, outlineButton, func() { a.ai.PreviewIndex-- }).Disabled(i == 0)
 		control(c, "preview-next", "下一题", rightIcon, outlineButton, func() { a.ai.PreviewIndex++ }).Disabled(i+1 == len(a.ai.Preview))
 	})
-	ui.Text(c, q.Prompt).FillWidth().FontSize(15).FontWeight(600).LineHeight(1.6)
+	mathText(c, q.Prompt, 15, t.Text).FillWidth().FontWeight(600).LineHeight(1.6)
 	for i, opt := range q.Options {
-		ui.Text(c, fmt.Sprintf("%c. %s", 'A'+i, opt)).FillWidth().FontSize(13).Padding(8, 12).Radius(cornerRadius(c, 36)).Background(t.Surface)
+		mathTextPrefix(c, fmt.Sprintf("%c. ", 'A'+i), opt, 13, t.Text, 300).FillWidth().Padding(8, 12).Radius(cornerRadius(c, 36)).Background(t.Surface)
 	}
 	ans := q.TextAnswer
 	if !domain.IsTextQuestion(q) {
 		ans = domain.Letters(q.Answer)
 	}
-	ui.Text(c, "答案："+ans).FillWidth().FontSize(13).TextColor(t.Success)
-	ui.Text(c, q.Explanation).FillWidth().FontSize(12).LineHeight(1.6).TextColor(t.TextMuted)
+	mathTextPrefix(c, "答案：", ans, 13, t.Success, 300).FillWidth()
+	mathText(c, q.Explanation, 12, t.TextMuted).FillWidth().LineHeight(1.6)
 }
 func (a *app) aiDiagnosisBody(c *ui.Context) {
 	good, bad := a.counts()
@@ -274,7 +274,7 @@ func (a *app) aiDiagnosisBody(c *ui.Context) {
 	}
 }
 func (a *app) aiJudgmentBody(c *ui.Context) {
-	ui.Text(c, a.ai.JudgeQuestion.Prompt).FillWidth().FontSize(14).FontWeight(600).LineHeight(1.6)
+	mathText(c, a.ai.JudgeQuestion.Prompt, 14, c.Theme().Text).FillWidth().FontWeight(600).LineHeight(1.6)
 	ui.Text(c, "复核会发送本题题干、选项、参考答案和本次作答。AI 判断仅供参考，确认应用后才更新练习记录。").FillWidth().FontSize(11).LineHeight(1.6).TextColor(c.Theme().TextMuted)
 	if a.ai.Judgment != nil {
 		label := "AI 认为：需订正"
