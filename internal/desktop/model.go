@@ -4,10 +4,8 @@ package desktop
 
 import (
 	"strings"
-	"time"
 
 	"github.com/egoist/mygo"
-	"github.com/egoist/mygo/ui"
 
 	"github.com/ispacewang/quesora-native/internal/domain"
 )
@@ -15,69 +13,34 @@ import (
 // app 持有窗口生命周期内的模型、控件状态和稳定句柄。
 // 生产环境的字段变更在 UI 线程进行；后台任务只能经 publish 发布结果。
 type app struct {
-	rounded                                                        bool
-	appearance                                                     string
-	systemDark                                                     func() bool
-	themeOff                                                       func()
-	ai                                                             aiState
-	updates                                                        updateState
-	restoreOpen, restoreBusy, restorePicking                       bool
-	restorePath                                                    string
-	pickRestore                                                    func() (string, error)
-	settingsOpen, backupBusy, backupError                          bool
-	backupMessage, lastPreferences                                 string
-	pickBackup                                                     func() (string, error)
-	showDataFolder                                                 func() error
-	repeatPractice                                                 bool
-	resetPracticeOpen                                              bool
-	attemptAnsweredID, reviewedQuestionID                          string
-	quickFeedbackPending                                           bool
-	quickAdvanceAt                                                 time.Time
-	mistakeNote, mistakeNoteID, mistakeNoteError                   string
-	practiceRevision                                               uint64
-	mistakeNoteSaving                                              bool
-	answerHandle                                                   ui.Handle
-	importantMotion                                                importantMotion
-	exam                                                           *examSession
-	examForm                                                       examSettings
-	examSetupOpen, examSubmitOpen, examExitOpen, examSaving        bool
-	examMessage                                                    string
-	historyOpen, historyLoading, historyDeleteOpen                 bool
-	historyMessage, historyDeleteKey, historyExpanded              string
-	history                                                        []historyRecord
-	paperBusy                                                      bool
-	paper                                                          *examSession
-	paperSettings                                                  examSettings
-	toastLast                                                      string
-	savedWrong, wrongSaving, exportOpen                            bool
-	filters                                                        map[string]bool
-	importantOnly, random, quick, shuffle, showPreview, finishOpen bool
-	order                                                          []string
-	optionOrder                                                    []int
-	questions                                                      []domain.Question
-	bank, filter                                                   string
-	index                                                          int
-	chosen                                                         uint
-	typed                                                          string
-	answers                                                        map[string]domain.Response
-	starred                                                        map[string]bool
-	dark, leftOpen, rightOpen, onlyWrong                           bool
-	notice                                                         string
-	helpOpen                                                       bool
-	win                                                            *mygo.Window
-	store                                                          *questionStore
-	jobs                                                           *libraryJobs
-	dispatch                                                       func(func())
-	pickFile                                                       func() ([]string, error)
-	closed, importOpen, importBusy, importError, deleteOpen        bool
-	importMessage, libraryStatus, deleteName                       string
-	importWarnings                                                 []string
+	appearanceState
+	settingsState
+	practiceState
+	mistakeState
+	examState
+	historyState
+	libraryState
+
+	ai        aiState
+	updates   updateState
+	toastLast string
+	helpOpen  bool
+	win       *mygo.Window
+	store     *questionStore
+	jobs      *libraryJobs
+	dispatch  func(func())
+	closed    bool
 }
 
 // newApp 提供离屏测试的示例初态；main 在真实启动时用本地题库替换示例。
 func newApp() *app {
 	loadNativeAssets()
-	return &app{appearance: "system", ai: newAIState(), questions: demoQuestions(), bank: "数学基础", filter: "全部", answers: map[string]domain.Response{}, starred: map[string]bool{}, leftOpen: true, rightOpen: true}
+	return &app{
+		appearanceState: appearanceState{appearance: "system"},
+		libraryState:    libraryState{questions: demoQuestions()},
+		practiceState:   practiceState{bank: "数学基础", filter: "全部", answers: map[string]domain.Response{}, starred: map[string]bool{}, leftOpen: true, rightOpen: true},
+		ai:              newAIState(),
+	}
 }
 
 // visible 根据当前题库和组合筛选创建新切片，并应用本轮题序，不重排仓库原始数据。
