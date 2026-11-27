@@ -1,4 +1,4 @@
-// 使用内置中文字体生成原生文本 PDF；不承担通用 LaTeX 或交互几何排版。
+// 使用固定试卷快照、内置字体和原生配图渲染器导出 PDF。
 
 package desktop
 
@@ -36,7 +36,7 @@ func (a *app) exportExamPDF(answers bool) {
 	go func() {
 		filename, err := mygo.Dialog.Save(mygo.SaveDialogOptions{Parent: win, Title: "导出" + label, DefaultPath: safeName, Filters: []mygo.FileFilter{{Name: "PDF", Extensions: []string{"pdf"}}}})
 		if err == nil && filename != "" {
-			err = exportpdf.Write(filename, exportpdf.Paper{Bank: e.Bank, Minutes: e.Minutes, Questions: e.Questions, Responses: e.Responses, Important: e.Important}, answers)
+			err = exportpdf.Write(filename, exportpdf.Paper{Bank: e.Bank, Minutes: e.Minutes, Questions: e.Questions, Responses: e.Responses, Important: e.Important, Rasterize: rasterizePaperSVG}, answers)
 		}
 		a.publish(func() {
 			a.paperBusy = false

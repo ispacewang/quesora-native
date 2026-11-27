@@ -46,6 +46,7 @@ func (a *app) quiz(c *ui.Context) {
 				ui.Column(c.Key("question-content")).Label("题卡").FillWidth().MaxWidth(800).AlignSelf(ui.Center).Padding(20, 16).Children(func() {
 					a.questionToolbar(c, q)
 					mathText(c, q.Prompt, 16, c.Theme().Text).Label("题干").FontWeight(600).LineHeight(1.625).FillWidth().Margin(0, 0, 32, 0)
+					questionDiagram(c, q, true)
 					if q.Graph {
 						a.functionGraph(c)
 					}
@@ -82,6 +83,7 @@ func (a *app) quiz(c *ui.Context) {
 					}
 					ui.Row(c.Key("question-actions")).FillWidth().Padding(16, 0, 0, 0).BorderWidth(1, 0, 0, 0).BorderColor(c.Theme().Border.Alpha(.4)).Gap(10).Children(func() {
 						control(c, "prev", "上一题", leftIcon, outlineButton, func() { a.navigate(a.index - 1) }).Label("上一题").Height(32).Disabled(a.index == 0)
+						control(c, "share-question", "分享题目", nil, outlineButton, func() { a.openShare(q, a.displayOptions(q)) }).Height(32)
 						if done {
 							control(c, "next", "下一题 →", nil, primaryButton, a.nextQuestion).Label("下一题").Height(32)
 						} else {

@@ -3,6 +3,7 @@ package desktop
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/egoist/mygo/ui"
 )
@@ -74,6 +75,10 @@ func (a *app) confirmRestore() {
 
 // acceptRestoredState 只替换领域/学习状态；窗口、稳定句柄、真实仓库和调度器继续由原 app 持有。
 func (a *app) acceptRestoredState(next *restorableState) {
+	a.share.directory = ""
+	if filepath.IsAbs(next.ShareDirectory) {
+		a.share.directory = next.ShareDirectory
+	}
 	a.practiceRevision++
 	a.mistakeNoteID, a.mistakeNote, a.mistakeNoteError = "", "", ""
 	a.questions, a.answers, a.starred = next.Questions, next.Answers, next.Starred

@@ -139,6 +139,7 @@ func (a *app) examQuestion(c *ui.Context, e *examSession) {
 	ui.Column(c.Key("exam-question"+q.ID)).FillWidth().MaxWidth(740).AlignSelf(ui.Center).Padding(32, 28).Children(func() {
 		ui.Row(c).FillWidth().Gap(8).AlignItems(ui.Center).Wrap().Margin(0, 0, 24, 0).Children(func() {
 			ui.Text(c, fmt.Sprintf("第 %d 题", idx+1)).FontSize(16).FontWeight(600).TextColor(t.Accent)
+			control(c, "share-exam", "分享题目", nil, outlineButton, func() { a.openShare(q, domain.ResponseOrder(q, *r)) })
 			ui.Text(c, q.Kind).FontSize(12).Padding(2, 10).Radius(cornerRadius(c, 22)).Background(t.Accent).TextColor(t.AccentText)
 			if e.Important[idx] {
 				ui.Text(c, "重要题目").FontSize(12).Padding(2, 10).Radius(cornerRadius(c, 22)).Background(t.Danger).TextColor(t.AccentText)
@@ -156,6 +157,7 @@ func (a *app) examQuestion(c *ui.Context, e *examSession) {
 			control(c, "mark", label, nil, ghostButton, func() { e.Marked[idx] = !e.Marked[idx] }).Label("标记疑题")
 		})
 		mathText(c, q.Prompt, 16, t.Text).FontWeight(600).LineHeight(1.625).FillWidth().Margin(0, 0, 32, 0)
+		questionDiagram(c, q, true)
 		if domain.IsTextQuestion(q) {
 			ui.Row(c).FillWidth().Children(func() {
 				ui.Text(c, "输入答案").FontSize(10).TextColor(t.TextMuted)
@@ -311,6 +313,7 @@ func reviewQuestion(c *ui.Context, q domain.Question, r domain.Response, importa
 			}
 		})
 		mathText(c, q.Prompt, 14, t.Text).FillWidth().FontWeight(600).LineHeight(1.625)
+		questionDiagram(c, q, false)
 		if !domain.IsTextQuestion(q) {
 			for display, original := range domain.ResponseOrder(q, r) {
 				fg := t.Text

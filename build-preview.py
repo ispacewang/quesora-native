@@ -15,7 +15,7 @@ from qa.installer import build_installer
 
 ROOT = pathlib.Path(__file__).resolve().parent
 VERSION_RE = r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?"
-SCENES = ["ai-settings", "ai-beta-off", "ai-generate", "ai-preview", "ai-diagnose", "restore", "update", "settings", "history", "math", "math-exam", "empty", "unselected", "multi", "judge", "fill", "short", "selected", "correct", "wrong", "mistake-note", "important", "exam", "exam-result", "exam-setup", "exam-setup-empty", "many-banks"]
+SCENES = ["ai-settings", "ai-beta-off", "ai-generate", "ai-preview", "ai-diagnose", "restore", "update", "settings", "history", "math", "math-exam", "media", "media-exam", "share", "share-card", "empty", "unselected", "multi", "judge", "fill", "short", "selected", "correct", "wrong", "mistake-note", "important", "exam", "exam-result", "exam-setup", "exam-setup-empty", "many-banks"]
 
 
 def build_version(value):

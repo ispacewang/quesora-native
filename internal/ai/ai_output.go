@@ -8,6 +8,7 @@ import (
 	"math/bits"
 	"strings"
 
+	"github.com/ispacewang/quesora-native/internal/diagram"
 	"github.com/ispacewang/quesora-native/internal/domain"
 	"github.com/ispacewang/quesora-native/internal/importer"
 )
@@ -27,6 +28,8 @@ func ParseQuestions(text, bank string) ([]domain.Question, error) {
 	var rows []struct {
 		Question, Type, Answer, Explanation string
 		Options                             []string
+		Diagram                             json.RawMessage
+		DiagramSvg                          string
 	}
 	if len(raw) > 0 && raw[0] == '{' {
 		var wrap struct{ Questions json.RawMessage }
@@ -82,6 +85,23 @@ func ParseQuestions(text, bank string) ([]domain.Question, error) {
 			if q.Answer == 0 || q.Answer>>len(q.Options) != 0 || (r.Type != "多选题" && bits.OnesCount(q.Answer) != 1) {
 				return nil, fmt.Errorf("第 %d 道题答案无效", i+1)
 			}
+		}
+		if len(r.Diagram) > 0 && string(r.Diagram) != "null" {
+			cfg, err := diagram.Parse(r.Diagram)
+			if err != nil {
+				return nil, fmt.Errorf("第 %d 道题的配图配置无效", i+1)
+			}
+			if _, err = cfg.SVG(); err != nil {
+				return nil, fmt.Errorf("第 %d 道题的配图无法绘制", i+1)
+			}
+			q.Meta["diagram"] = cfg
+		}
+		if r.DiagramSvg != "" {
+			svg, err := diagram.SanitizeSVG(r.DiagramSvg)
+			if err != nil {
+				return nil, fmt.Errorf("第 %d 道题的 SVG 配图无法绘制", i+1)
+			}
+			q.Meta["diagramSvg"] = svg
 		}
 		out = append(out, q)
 	}

@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"github.com/go-pdf/fpdf"
 	"github.com/ispacewang/quesora-native/internal/assets"
+	"github.com/ispacewang/quesora-native/internal/diagram"
 	"github.com/ispacewang/quesora-native/internal/domain"
+	"image"
 	"io"
 	"os"
 	"path/filepath"
@@ -20,9 +22,10 @@ type Paper struct {
 	Questions []domain.Question
 	Responses []domain.Response
 	Important []bool
+	Rasterize func(svg string, maximum int) (image.Image, error)
 }
 
-// Write 用固定试卷快照生成 A4 中文文本 PDF，写入临时文件成功后才替换目标。
+// Write 用固定试卷快照生成 A4 图文 PDF，写入临时文件成功后才替换目标。
 func Write(filename string, e Paper, answers bool) error {
 	data, err := assets.Files.ReadFile("resources/fonts/noto-400.ttf.gz")
 	if err != nil {
@@ -53,26 +56,34 @@ func Write(filename string, e Paper, answers bool) error {
 	pdf.SetFontSize(10)
 	pdf.MultiCell(0, 7, fmt.Sprintf("时长 %d 分钟    共 %d 题", e.Minutes, len(e.Questions)), "", "L", false)
 	pdf.Ln(4)
+	layout := pageLayout{pdf: pdf, raster: e.Rasterize}
 	for i, q := range e.Questions {
 		pdf.SetFontSize(11)
 		important := ""
-		if e.Important[i] {
+		if i < len(e.Important) && e.Important[i] {
 			important = " [重要题目]"
 		}
-		pdf.MultiCell(0, 7, fmt.Sprintf("%d. [%s]%s %s", i+1, q.Kind, important, q.Prompt), "", "L", false)
+		layout.text(fmt.Sprintf("%d. [%s]%s ", i+1, q.Kind, important), q.Prompt, 7)
+		if svg, err := diagram.FromMeta(q.Meta); err == nil && svg != "" {
+			layout.figure(svg)
+		}
+		var response domain.Response
+		if i < len(e.Responses) {
+			response = e.Responses[i]
+		}
 		if !domain.IsTextQuestion(q) {
-			for d, original := range domain.ResponseOrder(q, e.Responses[i]) {
-				pdf.MultiCell(0, 6, fmt.Sprintf("   %c. %s", rune('A'+d), q.Options[original]), "", "L", false)
+			for d, original := range domain.ResponseOrder(q, response) {
+				layout.text(fmt.Sprintf("   %c. ", rune('A'+d)), q.Options[original], 6)
 			}
 		}
 		if answers {
-			expected := domain.ResponseLetters(q, e.Responses[i], q.Answer)
+			expected := domain.ResponseLetters(q, response, q.Answer)
 			if domain.IsTextQuestion(q) {
 				expected = q.TextAnswer
 			}
-			pdf.MultiCell(0, 7, "正确答案："+expected, "", "L", false)
+			layout.text("正确答案：", expected, 7)
 			if q.Explanation != "" {
-				pdf.MultiCell(0, 6, "解析："+q.Explanation, "", "L", false)
+				layout.text("解析：", q.Explanation, 6)
 			}
 		} else if domain.IsTextQuestion(q) {
 			pdf.MultiCell(0, 8, "________________________________________________\n________________________________________________\n________________________________________________", "", "L", false)

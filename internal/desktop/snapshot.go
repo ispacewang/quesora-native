@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/egoist/mygo/ui"
+
 	"github.com/ispacewang/quesora-native/internal/assets"
 	"github.com/ispacewang/quesora-native/internal/domain"
 )
@@ -88,12 +90,24 @@ func (a *app) configureScene(scene string) {
 		a.openExamSetup()
 	case "important":
 		a.starred[a.questions[0].ID] = true
-	case "math", "math-exam":
+	case "math", "math-exam", "media", "media-exam", "share-card", "share":
 		a.questions[0].Prompt = `已知函数 $f(x)=\frac{x^2-1}{x+1}$，求 $f(3)$。同时计算：
 $\sum_{i=1}^{4} i^2=1^2+2^2+3^2+4^2$`
 		a.questions[0].Options = []string{`\frac{1}{2}`, `\sqrt{4}`, `x_1^2`, `\pi`}
 		a.questions[0].Explanation = `先约分得到 $f(x)=x-1$，再代入 $x=3$。`
-		if scene == "math-exam" {
+		if scene != "math" && scene != "math-exam" {
+			a.questions[0] = mediaDemoQuestion(a.questions[0])
+		}
+		if scene == "share" {
+			card := captureShare(a.questions[0], nil)
+			a.share.pixels, _ = renderShare(card)
+			if a.share.pixels != nil {
+				a.share.bitmap = ui.NewBitmap(a.share.pixels)
+			}
+			a.share.defaultDirectory = `C:\Users\示例\Downloads`
+			a.share.open = true
+		}
+		if scene == "math-exam" || scene == "media-exam" {
 			a.examForm = examSettings{Bank: a.bank, Minutes: 60, Counts: [5]float64{1}}
 			a.exam, _ = newExamSession(a.questions, a.examForm, a.starred, time.Now())
 		}
@@ -142,4 +156,15 @@ $\sum_{i=1}^{4} i^2=1^2+2^2+3^2+4^2$`
 		a.choose(0)
 		a.submit()
 	}
+}
+
+// mediaDemoQuestion is a synthetic fixture shared by snapshots and export tests.
+func mediaDemoQuestion(q domain.Question) domain.Question {
+	q.Prompt = `观察函数 $f(x)=x^2-1$ 的图像。若 $f(x)=3$，下列哪组是方程的解？`
+	q.Options = []string{`$x=-2$ 或 $x=2$`, `$x=-1$ 或 $x=1$`, `$x=0$ 或 $x=3$`, `$x=1$ 或 $x=3$`}
+	q.TextAnswer = "A"
+	q.Answer = 1
+	q.Explanation = `移项得 $x^2=4$，所以 $x=\pm 2$。`
+	q.Meta = map[string]any{"diagram": json.RawMessage(`{"boundingbox":[-4,7,4,-3],"axis":true,"grid":true,"elements":[{"type":"functiongraph","attrs":["x^2-1"],"opts":{"strokeColor":"#d45e2e","strokeWidth":3}}]}`)}
+	return q
 }

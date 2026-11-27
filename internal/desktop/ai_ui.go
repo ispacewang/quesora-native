@@ -254,6 +254,7 @@ func (a *app) aiPreviewBody(c *ui.Context) {
 		control(c, "preview-next", "下一题", rightIcon, outlineButton, func() { a.ai.PreviewIndex++ }).Disabled(i+1 == len(a.ai.Preview))
 	})
 	mathText(c, q.Prompt, 15, t.Text).FillWidth().FontWeight(600).LineHeight(1.6)
+	questionDiagram(c, q, false)
 	for i, opt := range q.Options {
 		mathTextPrefix(c, fmt.Sprintf("%c. ", 'A'+i), opt, 13, t.Text, 300).FillWidth().Padding(8, 12).Radius(cornerRadius(c, 36)).Background(t.Surface)
 	}

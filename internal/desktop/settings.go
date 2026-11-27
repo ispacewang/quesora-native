@@ -146,6 +146,7 @@ func (a *app) settingsDialog(c *ui.Context) {
 				line(c)
 				a.updateSection(c)
 				line(c)
+				a.shareSettings(c)
 				ui.Text(c, "数据与备份").FontSize(11).FontWeight(600).TextColor(t.TextMuted)
 				ui.Text(c, "题库、答题记录、已保存的考试和学习设置会一起备份。").FillWidth().FontSize(12).LineHeight(1.6)
 				if a.store != nil {
