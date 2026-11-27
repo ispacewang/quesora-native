@@ -52,7 +52,14 @@ func captureShare(q domain.Question, order []int) shareCard {
 func (s shareCard) view(c *ui.Context) {
 	ink, muted, paper, accent, line := ui.Hex("#2C251F"), ui.Hex("#8C4729"), ui.Hex("#FFFCF7"), ui.Hex("#E8662A"), ui.Hex("#E8DCCD")
 	ui.Column(c.Key("share-paper")).Label("分享图正文").FillWidth().Shrink(0).Padding(34, 40, 38, 40).Background(paper).Children(func() {
-		ui.Box(c.Key("accent")).Size(52, 5).Radius(2.5).Background(accent).Margin(0, 0, 20, 0)
+		ui.Row(c.Key("share-brand")).FillWidth().AlignItems(ui.Center).Gap(7).Margin(0, 0, 20, 0).Children(func() {
+			ui.Box(c.Key("accent")).Size(52, 5).Radius(2.5).Background(accent)
+			ui.Spacer(c)
+			if appIcon != nil {
+				ui.Image(c, appIcon).Size(16, 16).Fit(ui.Contain).Label("Quesora Logo")
+			}
+			ui.Text(c, "Quesora").FontSize(12).FontWeight(600).TextColor(ui.Hex("#715B50"))
+		})
 		mathTextPrefix(c, "", s.prompt, 24, ink, 448).FillWidth().FontWeight(600).LineHeight(1.53)
 		if s.figure.svg != nil {
 			w, h := s.figure.svg.Size()
@@ -75,12 +82,6 @@ func (s shareCard) view(c *ui.Context) {
 				}
 			})
 		}
-		ui.Row(c.Key("share-brand")).FillWidth().Justify(ui.End).AlignItems(ui.Center).Gap(7).Margin(26, 0, 0, 0).Children(func() {
-			if appIcon != nil {
-				ui.Image(c, appIcon).Size(15, 15).Fit(ui.Contain)
-			}
-			ui.Text(c, "Quesora").FontSize(12).FontWeight(600).TextColor(ui.Hex("#826C60"))
-		})
 	})
 }
 

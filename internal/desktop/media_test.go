@@ -23,6 +23,10 @@ func TestShareCardContainsOnlyPromptAndDisplayedOptions(t *testing.T) {
 	}
 	tt := ui.NewTester(card.view, 560, 1000)
 	content := strings.Join(tt.Texts(), "\n")
+	logo, ok := tt.Find("Quesora Logo")
+	if !ok || logo.Y > 60 {
+		t.Fatal("brand not visible at top", logo)
+	}
 	if !strings.Contains(content, "Quesora") || !strings.Contains(content, q.Prompt) || strings.Contains(content, q.Explanation) || strings.Contains(content, q.Bank) || strings.Contains(content, "下载图片") {
 		t.Fatal(content)
 	}
