@@ -45,6 +45,10 @@ func (s *Store) LoadPractice() (map[string]domain.Response, map[string]bool, err
 			return nil, nil, err
 		}
 	}
+	// JSON null from an older/edited backup is an empty set, not a writable nil map.
+	if stars == nil {
+		stars = map[string]bool{}
+	}
 	return answers, stars, nil
 }
 

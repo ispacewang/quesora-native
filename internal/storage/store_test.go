@@ -150,3 +150,28 @@ func TestReadStateDistinguishesMissingAndEmptyPreferences(t *testing.T) {
 		t.Fatal(state, err)
 	}
 }
+
+func TestNullImportantMarksRemainUsableAfterReopening(t *testing.T) {
+	s := testStore(t, "null-stars")
+	if err := s.SetSetting("stars", "null"); err != nil {
+		t.Fatal(err)
+	}
+	filename := s.Path()
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+	reopened, err := Open(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reopened.Close()
+	_, stars, err := reopened.LoadPractice()
+	if err != nil || stars == nil {
+		t.Fatal("null marks did not normalize", stars, err)
+	}
+	stars["1"] = true
+	state, err := reopened.ReadState()
+	if err != nil || state.Starred == nil {
+		t.Fatal("restorable state contains nil marks", state, err)
+	}
+}
