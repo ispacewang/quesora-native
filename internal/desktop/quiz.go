@@ -45,7 +45,7 @@ func (a *app) quiz(c *ui.Context) {
 			ui.Column(c.Key("question-shell")).FillWidth().Padding(16).Children(func() {
 				ui.Column(c.Key("question-content")).Label("题卡").FillWidth().MaxWidth(800).AlignSelf(ui.Center).Padding(20, 16).Children(func() {
 					a.questionToolbar(c, q)
-					ui.Text(c, q.Prompt).Label("题干").FontSize(16).FontWeight(600).LineHeight(1.625).FillWidth().Margin(0, 0, 32, 0)
+					mathText(c, q.Prompt, 16, c.Theme().Text).Label("题干").FontWeight(600).LineHeight(1.625).FillWidth().Margin(0, 0, 32, 0)
 					if q.Graph {
 						a.functionGraph(c)
 					}
@@ -253,7 +253,7 @@ func (a *app) option(c *ui.Context, q domain.Question, display, original int, do
 				lc = letterBG
 			}
 			ui.Box(c).Size(24, 24).Shrink(0).Radius(cornerRadius(c, 24)).Border(1, lc).Background(letterBG).Center().Children(func() { ui.Text(c, string(rune('A'+display))).FontSize(12).FontWeight(600).TextColor(letterFG) })
-			ui.Text(c, q.Options[original]).FontSize(14).LineHeight(1.625).TextColor(fg).Grow(1).MinWidth(0).Margin(2, 0, 0, 0)
+			mathText(c, q.Options[original], 14, fg).LineHeight(1.625).Grow(1).MinWidth(0).Margin(2, 0, 0, 0)
 			if resultIcon != nil {
 				color := t.Success
 				if !correct {
@@ -277,7 +277,7 @@ func (a *app) textAnswer(c *ui.Context, q domain.Question, done bool) {
 	}
 	ui.TextArea(c.Key("answer-"+q.ID), &a.typed).Label("填写答案").Bind(&a.answerHandle).Placeholder(placeholder).FillWidth().Height(110).FontSize(14).LineHeight(1.5).Padding(8, 12).Radius(cornerRadius(c, 80)).Border(1, t.Border).Background(t.Background).Disabled(done)
 	if a.showPreview && a.typed != "" {
-		ui.Text(c, a.typed).FillWidth().FontSize(14).LineHeight(1.625).Padding(12).Border(1, t.Border.Alpha(.5)).Background(t.Surface.Alpha(.3))
+		mathText(c, a.typed, 14, t.Text).FillWidth().LineHeight(1.625).Padding(12).Border(1, t.Border.Alpha(.5)).Background(t.Surface.Alpha(.3))
 	}
 }
 func (a *app) answerFeedback(c *ui.Context, q domain.Question, r domain.Response) {
@@ -298,16 +298,16 @@ func (a *app) answerFeedback(c *ui.Context, q domain.Question, r domain.Response
 		if !r.Correct {
 			ui.Row(c).Padding(0, 16).Gap(8).Children(func() {
 				caption(c, "正确答案：")
-				ui.Text(c, a.displayAnswer(q)).FontSize(14).FontWeight(600).TextColor(t.Success)
+				mathText(c, a.displayAnswer(q), 14, t.Success).FontWeight(600).MinWidth(0)
 			})
 		}
 		if r.AIExplanation != "" {
-			ui.Text(c, "AI 复核："+r.AIExplanation).FillWidth().FontSize(13).LineHeight(1.6).TextColor(t.TextMuted)
+			mathTextPrefix(c, "AI 复核：", r.AIExplanation, 13, t.TextMuted, 300).FillWidth().LineHeight(1.6)
 		}
 		if q.Explanation != "" {
 			ui.Column(c.Key("explanation")).FillWidth().Radius(cornerRadius(c, 80)).Padding(16).Gap(4).Background(t.Surface.Alpha(.5)).Children(func() {
 				ui.Text(c, "解析").FontSize(10).FontWeight(600).TextColor(t.TextMuted)
-				ui.Text(c, q.Explanation).FontSize(14).LineHeight(1.625).FillWidth()
+				mathText(c, q.Explanation, 14, t.Text).LineHeight(1.625).FillWidth()
 			})
 		}
 		if !r.Correct && !a.quick {

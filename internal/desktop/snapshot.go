@@ -88,6 +88,15 @@ func (a *app) configureScene(scene string) {
 		a.openExamSetup()
 	case "important":
 		a.starred[a.questions[0].ID] = true
+	case "math", "math-exam":
+		a.questions[0].Prompt = `已知函数 $f(x)=\frac{x^2-1}{x+1}$，求 $f(3)$。同时计算：
+$\sum_{i=1}^{4} i^2=1^2+2^2+3^2+4^2$`
+		a.questions[0].Options = []string{`\frac{1}{2}`, `\sqrt{4}`, `x_1^2`, `\pi`}
+		a.questions[0].Explanation = `先约分得到 $f(x)=x-1$，再代入 $x=3$。`
+		if scene == "math-exam" {
+			a.examForm = examSettings{Bank: a.bank, Minutes: 60, Counts: [5]float64{1}}
+			a.exam, _ = newExamSession(a.questions, a.examForm, a.starred, time.Now())
+		}
 	case "exam", "exam-result":
 		a.examForm = examSettings{Bank: a.bank, Minutes: 60, Counts: [5]float64{40, 30, 30, 10, 10}}
 		a.exam, _ = newExamSession(a.questions, a.examForm, a.starred, time.Now())

@@ -121,7 +121,7 @@ func (a *app) wrongPanel(c *ui.Context) {
 							}
 						}).Children(func() {
 							ui.Column(c).FillWidth().Gap(8).Children(func() {
-								ui.Text(c, q.Prompt).FontSize(14).FontWeight(500).LineHeight(1.625).FillWidth()
+								mathTextPrefix(c, "", q.Prompt, 14, t.Text, 160).FontWeight(500).LineHeight(1.625).FillWidth()
 								ui.Column(c).FillWidth().Gap(2).Children(func() {
 									for display, i := range domain.ResponseOrder(q, r) {
 										opt := q.Options[i]
@@ -129,7 +129,7 @@ func (a *app) wrongPanel(c *ui.Context) {
 										if q.Answer&(1<<i) != 0 {
 											color = t.Success
 										}
-										ui.Text(c, fmt.Sprintf("%c. %s", rune('A'+display), opt)).FontSize(11).LineHeight(1.5).TextColor(color).FillWidth()
+										mathTextPrefix(c, fmt.Sprintf("%c. ", rune('A'+display)), opt, 11, color, 160).LineHeight(1.5).FillWidth()
 									}
 								})
 								given, expected := domain.ResponseLetters(q, r, r.Choice), domain.ResponseLetters(q, r, q.Answer)
@@ -137,8 +137,8 @@ func (a *app) wrongPanel(c *ui.Context) {
 									given, expected = r.Text, q.TextAnswer
 								}
 								ui.Row(c).FillWidth().Gap(12).Wrap().Children(func() {
-									ui.Text(c, "你的 "+given).FontSize(12).TextColor(t.Danger)
-									ui.Text(c, "正确 "+expected).FontSize(12).TextColor(t.Success)
+									mathTextPrefix(c, "你的 ", given, 12, t.Danger, 125).MinWidth(0)
+									mathTextPrefix(c, "正确 ", expected, 12, t.Success, 125).MinWidth(0)
 								})
 								mistakeNoteSummary(c, r.Note)
 							})

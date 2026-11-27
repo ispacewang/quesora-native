@@ -155,7 +155,7 @@ func (a *app) examQuestion(c *ui.Context, e *examSession) {
 			}
 			control(c, "mark", label, nil, ghostButton, func() { e.Marked[idx] = !e.Marked[idx] }).Label("标记疑题")
 		})
-		ui.Text(c, q.Prompt).FontSize(16).FontWeight(600).LineHeight(1.625).FillWidth().Margin(0, 0, 32, 0)
+		mathText(c, q.Prompt, 16, t.Text).FontWeight(600).LineHeight(1.625).FillWidth().Margin(0, 0, 32, 0)
 		if domain.IsTextQuestion(q) {
 			ui.Row(c).FillWidth().Children(func() {
 				ui.Text(c, "输入答案").FontSize(10).TextColor(t.TextMuted)
@@ -164,7 +164,7 @@ func (a *app) examQuestion(c *ui.Context, e *examSession) {
 			})
 			ui.TextArea(c.Key("exam-text"), &r.Text).Label("考试填写答案").FillWidth().Height(110).FontSize(14).LineHeight(1.5).Padding(8, 12).Radius(cornerRadius(c, 80)).Placeholder("输入你的答案...").Background(t.Background).Border(1, t.Border)
 			if e.preview {
-				ui.Text(c, r.Text).FillWidth().Radius(cornerRadius(c, 80)).Padding(12).LineHeight(1.625).Border(1, t.Border).Margin(8, 0, 0, 0)
+				mathText(c, r.Text, 14, t.Text).FillWidth().Radius(cornerRadius(c, 80)).Padding(12).LineHeight(1.625).Border(1, t.Border).Margin(8, 0, 0, 0)
 			}
 		} else {
 			ui.Column(c.Key("exam-options")).FillWidth().Gap(8).Children(func() {
@@ -184,7 +184,7 @@ func (a *app) examQuestion(c *ui.Context, e *examSession) {
 								lf = t.AccentText
 							}
 							ui.Box(c).Size(24, 24).Shrink(0).Radius(cornerRadius(c, 24)).Border(1, border).Background(lb).Center().Children(func() { ui.Text(c, string(rune('A'+display))).FontSize(12).FontWeight(600).TextColor(lf) })
-							ui.Text(c, q.Options[original]).Grow(1).MinWidth(0).FontSize(14).LineHeight(1.625).TextColor(fg).Margin(2, 0, 0, 0)
+							mathText(c, q.Options[original], 14, fg).Grow(1).MinWidth(0).LineHeight(1.625).Margin(2, 0, 0, 0)
 						})
 					})
 				}
@@ -310,7 +310,7 @@ func reviewQuestion(c *ui.Context, q domain.Question, r domain.Response, importa
 				ui.Text(c, "重要题目").FontSize(11).TextColor(t.Danger)
 			}
 		})
-		ui.Text(c, q.Prompt).FillWidth().FontSize(14).FontWeight(600).LineHeight(1.625)
+		mathText(c, q.Prompt, 14, t.Text).FillWidth().FontWeight(600).LineHeight(1.625)
 		if !domain.IsTextQuestion(q) {
 			for display, original := range domain.ResponseOrder(q, r) {
 				fg := t.Text
@@ -319,7 +319,7 @@ func reviewQuestion(c *ui.Context, q domain.Question, r domain.Response, importa
 				} else if r.Choice&(1<<original) != 0 {
 					fg = t.Danger
 				}
-				ui.Text(c, fmt.Sprintf("%c. %s", rune('A'+display), q.Options[original])).FillWidth().FontSize(13).LineHeight(1.6).TextColor(fg)
+				mathTextPrefix(c, fmt.Sprintf("%c. ", rune('A'+display)), q.Options[original], 13, fg, 300).FillWidth().LineHeight(1.6)
 			}
 		}
 		given, expected := domain.ResponseLetters(q, r, r.Choice), domain.ResponseLetters(q, r, q.Answer)
@@ -329,10 +329,10 @@ func reviewQuestion(c *ui.Context, q domain.Question, r domain.Response, importa
 		if given == "" {
 			given = "未作答"
 		}
-		ui.Text(c, "你的答案："+given).FillWidth().FontSize(12).TextColor(t.Danger)
-		ui.Text(c, "正确答案："+expected).FillWidth().FontSize(12).TextColor(t.Success)
+		mathTextPrefix(c, "你的答案：", given, 12, t.Danger, 300).FillWidth()
+		mathTextPrefix(c, "正确答案：", expected, 12, t.Success, 300).FillWidth()
 		if q.Explanation != "" {
-			ui.Text(c, "解析："+q.Explanation).FillWidth().FontSize(12).LineHeight(1.6).TextColor(t.TextMuted)
+			mathTextPrefix(c, "解析：", q.Explanation, 12, t.TextMuted, 300).FillWidth().LineHeight(1.6)
 		}
 		mistakeNoteSummary(c, r.Note)
 	})
