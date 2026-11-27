@@ -92,7 +92,7 @@ func (a *app) saveWrongBook() {
 	key := "mistake-book:" + time.Now().UTC().Format("20060102T150405.000000000")
 	a.wrongSaving = true
 	if !a.enqueue(func() {
-		_, err := s.db.Exec("INSERT INTO settings(key,value) VALUES(?,?)", key, string(data))
+		err := s.InsertSetting(key, string(data))
 		a.publish(func() {
 			a.wrongSaving = false
 			if err != nil {
@@ -123,18 +123,7 @@ func (a *app) clearWrong() {
 	if a.store != nil {
 		s := a.store
 		a.enqueue(func() {
-			tx, err := s.db.Begin()
-			if err == nil {
-				defer tx.Rollback()
-				for _, id := range ids {
-					if _, err = tx.Exec("DELETE FROM practice WHERE question_id=?", id); err != nil {
-						break
-					}
-				}
-				if err == nil {
-					err = tx.Commit()
-				}
-			}
+			err := s.DeleteResponses(ids)
 			if err != nil {
 				a.publish(func() { a.libraryStatus = "清空错题失败：" + err.Error() })
 			}

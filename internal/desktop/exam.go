@@ -225,7 +225,7 @@ func (a *app) saveExam() {
 	s, id := a.store, e.ID
 	a.examSaving = true
 	if !a.enqueue(func() {
-		_, err := s.db.Exec("INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", "exam:"+id, string(data))
+		err := s.SetSetting("exam:"+id, string(data))
 		a.publish(func() {
 			a.examSaving = false
 			if err != nil {
@@ -254,37 +254,6 @@ type savedMistake struct {
 	Response domain.Response
 }
 
-// loadHistory 读取两个独立键空间的快照，并检查考试的并行数组长度后才交给视图。
-func (s *questionStore) loadHistory() ([]historyRecord, error) {
-	rows, err := s.db.Query("SELECT key,value FROM settings WHERE key LIKE 'exam:%' OR key LIKE 'mistake-book:%' ORDER BY key DESC")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	out := []historyRecord{}
-	for rows.Next() {
-		var key, value string
-		if err = rows.Scan(&key, &value); err != nil {
-			return nil, err
-		}
-		r := historyRecord{Key: key}
-		if strings.HasPrefix(key, "exam:") {
-			e := &examSession{}
-			if err = json.Unmarshal([]byte(value), e); err == nil && len(e.Questions) > 0 && len(e.Responses) == len(e.Questions) && len(e.Important) == len(e.Questions) && len(e.Marked) == len(e.Questions) {
-				e.Saved = true
-				r.Exam = e
-			} else {
-				r.Error = "成绩记录无法读取"
-			}
-		} else {
-			if err = json.Unmarshal([]byte(value), &r.Mistakes); err != nil {
-				r.Error = "错题记录无法读取"
-			}
-		}
-		out = append(out, r)
-	}
-	return out, rows.Err()
-}
 func (a *app) openHistory() {
 	a.historyOpen = true
 	a.historyMessage = ""
@@ -317,7 +286,7 @@ func (a *app) deleteHistory() {
 	}
 	s := a.store
 	if a.enqueue(func() {
-		_, err := s.db.Exec("DELETE FROM settings WHERE key=?", key)
+		err := s.DeleteSetting(key)
 		a.publish(func() {
 			if err != nil {
 				a.historyMessage = "删除失败：" + err.Error()

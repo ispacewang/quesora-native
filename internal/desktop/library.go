@@ -117,10 +117,10 @@ func (a *app) startImport(paths []string) {
 		var qs []domain.Question
 		if err == nil {
 			a.publish(func() { a.importMessage = "正在保存题库…" })
-			err = store.importBanks(result)
+			err = store.ImportBanks(result)
 		}
 		if err == nil {
-			qs, err = store.load()
+			qs, err = store.LoadQuestions()
 		}
 		a.publish(func() { a.finishImport(result, qs, err) })
 	}) {
@@ -196,10 +196,10 @@ func (a *app) deleteSelectedBank() {
 	store := a.store
 	a.importBusy = true
 	if !a.enqueue(func() {
-		err := store.deleteBank(name)
+		err := store.DeleteBank(name)
 		var qs []domain.Question
 		if err == nil {
-			qs, err = store.load()
+			qs, err = store.LoadQuestions()
 		}
 		a.publish(func() {
 			a.importBusy = false

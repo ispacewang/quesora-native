@@ -16,7 +16,7 @@ func TestLearningPreferencesRestoreModesFiltersAndQuestion(t *testing.T) {
 	store := populatedStore(t, filename)
 	a := newApp()
 	a.store = store
-	a.questions, _ = store.load()
+	a.questions, _ = store.LoadQuestions()
 	a.bank = a.questions[0].Bank
 	a.jobs = newLibraryJobs()
 	a.dispatch = func(fn func()) { t.Error("unexpected persistence error") }
@@ -32,17 +32,17 @@ func TestLearningPreferencesRestoreModesFiltersAndQuestion(t *testing.T) {
 	want := a.preferences()
 	a.jobs.close()
 	a.jobs = nil
-	store.close()
+	store.Close()
 	store, err := openQuestionStore(filename)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer store.close()
+	defer store.Close()
 	b := newApp()
 	b.store = store
-	b.questions, _ = store.load()
+	b.questions, _ = store.LoadQuestions()
 	b.bank = ""
-	b.repeatPractice, err = store.loadRepeatPractice()
+	b.repeatPractice, err = store.LoadRepeatPractice()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,20 +59,20 @@ func TestLearningPreferencesRestoreModesFiltersAndQuestion(t *testing.T) {
 
 func TestPreferencesMissingBankAndCorruptPayload(t *testing.T) {
 	s := populatedStore(t, filepath.Join(t.TempDir(), "db"))
-	defer s.close()
+	defer s.Close()
 	a := newApp()
 	a.store = s
-	a.questions, _ = s.load()
+	a.questions, _ = s.LoadQuestions()
 	p := learningPreferences{Version: 1, Bank: "deleted", QuestionID: "missing", Filter: "不存在的题型", OnlyWrong: true, Filters: []string{"不存在的题型"}}
 	raw, _ := json.Marshal(p)
-	s.db.Exec("INSERT INTO settings(key,value) VALUES('learning-preferences',?)", string(raw))
+	fixtureDB(t, s).Exec("INSERT INTO settings(key,value) VALUES('learning-preferences',?)", string(raw))
 	if err := a.restorePreferences(); err != nil {
 		t.Fatal(err)
 	}
 	if _, ok := a.current(); !ok || a.bank == "deleted" {
 		t.Fatal("deleted bank left session unusable")
 	}
-	s.db.Exec("UPDATE settings SET value='{' WHERE key='learning-preferences'")
+	fixtureDB(t, s).Exec("UPDATE settings SET value='{' WHERE key='learning-preferences'")
 	if err := a.restorePreferences(); err == nil {
 		t.Fatal("corrupt settings silently accepted")
 	}
@@ -81,8 +81,8 @@ func TestPreferencesMissingBankAndCorruptPayload(t *testing.T) {
 func TestSettingsBackupUIAndKeyboardIsolation(t *testing.T) {
 	a := newApp()
 	a.store = populatedStore(t, filepath.Join(t.TempDir(), "data", "questions.db"))
-	defer a.store.close()
-	a.questions, _ = a.store.load()
+	defer a.store.Close()
+	a.questions, _ = a.store.LoadQuestions()
 	a.bank = a.questions[0].Bank
 	a.navigate(0)
 	updates := make(chan func(), 64)
@@ -128,8 +128,8 @@ func TestSettingsBackupUIAndKeyboardIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer saved.close()
-	qs, err := saved.load()
+	defer saved.Close()
+	qs, err := saved.LoadQuestions()
 	if err != nil || len(qs) != 5 {
 		t.Fatal(len(qs), err)
 	}

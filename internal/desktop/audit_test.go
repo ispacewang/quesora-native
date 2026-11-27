@@ -34,7 +34,7 @@ func TestWrongBookSaveDoesNotClaimChangedOrOtherBank(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.close()
+	defer s.Close()
 	a.store = s
 	a.jobs = newLibraryJobs()
 	defer a.jobs.close()
@@ -57,7 +57,7 @@ func TestWrongBookSaveDoesNotClaimChangedOrOtherBank(t *testing.T) {
 	a.enqueue(func() { close(done) })
 	<-done
 	var count int
-	if err = s.db.QueryRow("SELECT COUNT(*) FROM settings WHERE key LIKE 'mistake-book:%'").Scan(&count); err != nil || count != 1 {
+	if err = fixtureDB(t, s).QueryRow("SELECT COUNT(*) FROM settings WHERE key LIKE 'mistake-book:%'").Scan(&count); err != nil || count != 1 {
 		t.Fatal("repeated click saved duplicate", count, err)
 	}
 	a.savedWrong = true

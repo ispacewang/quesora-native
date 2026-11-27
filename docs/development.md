@@ -12,9 +12,9 @@
 - ai 与 updater 的纯服务测试在各自包内，desktop 的集成测试覆盖开关、取消、安装交接等用户流程。
 - 服务商目录与题型顺序通过返回副本的函数提供，调用者不能改写共享目录。
 
-第二批新增 ai、updater、exportpdf 和 storage 服务包。ai 负责服务商目录、HTTP、密钥配置、响应解析与去重，updater 负责发布发现、下载和校验，exportpdf 接收捕获的 Paper 数据生成文件，storage 提供 SQLite 只读打开和一致性快照。它们不依赖 desktop 或 MyGo。
+第二批新增 ai、updater、exportpdf 和 storage 服务包。ai 负责服务商目录、HTTP、密钥配置、响应解析与去重，updater 负责发布发现、下载和校验，exportpdf 接收捕获的 Paper 数据生成文件，storage 管理 SQLite 仓储、只读打开、数据快照和恢复事务。它们不依赖 desktop 或 MyGo。
 
-SQLite 题库仓储、恢复状态解释和 app 状态分组仍待后续提取。新增业务规则优先放入 domain，文件解析规则放入 importer，界面状态继续由 desktop 的 UI 线程拥有。
+SQLite 题库仓储已由 internal/storage 管理，desktop 仅保留考试/错题本与学习设置的业务解释。app 状态分组仍待后续整理。新增业务规则优先放入 domain，文件解析规则放入 importer，界面状态继续由 desktop 的 UI 线程拥有。
 
 ## 入口与职责
 
@@ -24,7 +24,7 @@ SQLite 题库仓储、恢复状态解释和 app 状态分组仍待后续提取�
 | 题库导入 | internal/importer/*.go | 先识别容器，再识别表头说明；未知或冲突行报告来源，不伪造答案 |
 | 练习 | internal/domain/*.go、internal/desktop/practice_*.go | 最近提交与本次访问分开，答案始终使用原始选项索引 |
 | 考试/PDF | exam.go、exam_setup*.go、exam_view.go、exam_pdf.go | 固定题序和映射，独立于练习；重要题失误综合分归零但保留实际正确数 |
-| 数据/设置 | storage.go、practice_store.go、data_*.go、preferences.go | 导入原子提交、单连接、串行任务、一致性备份、失败保留原文件 |
+| 数据/设置 | internal/storage/*.go、internal/desktop/{storage,practice_store,data_*,preferences}.go | 导入原子提交、单连接、串行任务、一致性备份、失败保留原文件 |
 | 原生资源 | fonts.go、icons.go、important_animation.go、frosted.go | 字体/标志内嵌；动画仅在活动时请求下一帧 |
 | 打包/发布 | build-preview.py、qa/、packaging/、.github/workflows/windows.yml | 发布白名单隔离用户库；固定安装 AppId；先测试后发布 |
 
@@ -64,7 +64,7 @@ UI 回归使用 ui.NewTester 覆盖焦点、按键、重复帧和最小窗口；
 
 ## 新增维护边界
 
-数据恢复编排在 internal/desktop/data_restore.go 和 restore_ui.go，一致性快照在 internal/storage：先生成只读快照验证，再保留恢复前备份，最后事务替换四张业务表，不在活动连接存在时直接替换 .db 文件。
+数据恢复编排在 internal/desktop/data_restore.go 和 restore_ui.go，SQL、数据校验、快照和恢复事务均在 internal/storage：先生成只读快照验证，再保留恢复前备份，最后事务替换四张业务表，不在活动连接存在时直接替换 .db 文件。
 
 更新服务在 internal/updater，界面编排在 internal/desktop/update_ui.go 和 update_runtime.go：公开元数据只决定候选，固定仓库/产物名/HTTPS 重定向名单和 SHA-256 均通过才允许安装；测试注入下载/进程替身。实际安装在用户确认后交给可见安装器，不在自动化测试中启动真实安装。版本、来源 URL、取消、限流和缓存被修改均需回归。
 
@@ -78,3 +78,11 @@ Windows 图标缓存：安装器给桌面/开始菜单快捷方式指定 icons/q
 
 预览通道更新由 update_feed.go 优先读取固定仓库的 releases.atom，仅接受本仓库合法 SemVer 标签链接，再用 HEAD 确认固定命名资产长度。订阅源或资产探测失败才使用 update.go 中的发布列表 API；不重试 403/429。UI 对成功检查缓存一分钟，保留候选和已校验文件；所有下载仍经官方 HTTPS 主机白名单与 SHA-256 检查。
 正式通道仍通过 API 验证 release.prerelease 标记，因为 Atom 不携带该字段，不能只根据标签格式区分正式与预发布。
+
+### 仓储与恢复边界
+
+internal/storage.Store 拥有数据库连接、四张业务表、题库批量导入、练习/备注、原始设置及快照。桌面界面通过明确的方法调用，不直接执行 SQL；仅测试代码会额外打开临时数据库，注入旧版记录或故障。
+
+Store.ReadState 返回纯数据 State。RestoreFrom 先校验结构/关联，再将私有快照的 State 交给业务校验回调；桌面层检查考试/错题本 JSON 和学习设置版本。校验回调不得写外部状态。通过后才生成恢复前备份，并在同一事务中替换四张表。源连接和游标在后续查询/事务前关闭，单连接仓储不会等待自己释放资源。
+
+恢复结果由 restorableState 携带到 UI 线程；后台不创建 app、不加载字体，也不保存 ui.Context 或 ui.Element。UI 线程独占随机题序、当前题位置、临时作答和外观应用。没有学习设置的旧备份使用原有默认值，损坏或未知版本在覆盖前拒绝。

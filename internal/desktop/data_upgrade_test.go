@@ -19,14 +19,14 @@ func populatedStore(t *testing.T, filename string) *questionStore {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = s.importBanks(result); err != nil {
+	if err = s.ImportBanks(result); err != nil {
 		t.Fatal(err)
 	}
-	qs, _ := s.load()
-	if err = s.saveResponse(qs[0].ID, domain.Response{Choice: 2, Correct: true}); err != nil {
+	qs, _ := s.LoadQuestions()
+	if err = s.SaveResponse(qs[0].ID, domain.Response{Choice: 2, Correct: true}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = s.db.Exec("INSERT INTO settings(key,value) VALUES('exam:fixture','saved exam')"); err != nil {
+	if _, err = fixtureDB(t, s).Exec("INSERT INTO settings(key,value) VALUES('exam:fixture','saved exam')"); err != nil {
 		t.Fatal(err)
 	}
 	return s
@@ -61,17 +61,17 @@ func TestDataLocationInstalledPortableAndSource(t *testing.T) {
 
 func TestBackupIncludesWALAndProtectsLiveDatabase(t *testing.T) {
 	root := t.TempDir()
-	s := populatedStore(t, filepath.Join(root, "live.db"))
-	defer s.close()
-	if _, err := s.db.Exec("PRAGMA journal_mode=WAL"); err != nil {
+	s := populatedStore(t, filepath.Join(root, "fixtureDB(t, live)"))
+	defer s.Close()
+	if _, err := fixtureDB(t, s).Exec("PRAGMA journal_mode=WAL"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.db.Exec("INSERT INTO settings(key,value) VALUES('wal-test','latest')"); err != nil {
+	if _, err := fixtureDB(t, s).Exec("INSERT INTO settings(key,value) VALUES('wal-test','latest')"); err != nil {
 		t.Fatal(err)
 	}
 	backup := filepath.Join(root, "备份 'quoted'", "backup.db")
 	for i := 0; i < 2; i++ {
-		if err := s.backupTo(backup); err != nil {
+		if err := s.BackupTo(backup); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -79,23 +79,23 @@ func TestBackupIncludesWALAndProtectsLiveDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer saved.close()
-	qs, err := saved.load()
+	defer saved.Close()
+	qs, err := saved.LoadQuestions()
 	if err != nil || len(qs) != 5 {
 		t.Fatal(len(qs), err)
 	}
-	answers, _, err := saved.loadPractice()
+	answers, _, err := saved.LoadPractice()
 	if err != nil || !answers[qs[0].ID].Correct {
 		t.Fatal(answers, err)
 	}
 	for key, want := range map[string]string{"wal-test": "latest", "exam:fixture": "saved exam"} {
 		var got string
-		if err = saved.db.QueryRow("SELECT value FROM settings WHERE key=?", key).Scan(&got); err != nil || got != want {
+		if err = fixtureDB(t, saved).QueryRow("SELECT value FROM settings WHERE key=?", key).Scan(&got); err != nil || got != want {
 			t.Fatal(key, got, err)
 		}
 	}
-	for _, p := range []string{s.path, s.path + "-wal", s.path + "-shm"} {
-		if err = s.backupTo(p); err == nil {
+	for _, p := range []string{s.path(), s.path() + "-wal", s.path() + "-shm"} {
+		if err = s.BackupTo(p); err == nil {
 			t.Fatal("live database path accepted", p)
 		}
 	}
@@ -105,11 +105,11 @@ func TestInstalledDataMigrationRetainsSourceAndExistingTarget(t *testing.T) {
 	root := t.TempDir()
 	source := filepath.Join(root, "old", "data", "questions.db")
 	s := populatedStore(t, source)
-	defer s.close()
-	if _, err := s.db.Exec("PRAGMA journal_mode=WAL"); err != nil {
+	defer s.Close()
+	if _, err := fixtureDB(t, s).Exec("PRAGMA journal_mode=WAL"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.db.Exec("INSERT INTO settings(key,value) VALUES('migration','original')"); err != nil {
+	if _, err := fixtureDB(t, s).Exec("INSERT INTO settings(key,value) VALUES('migration','original')"); err != nil {
 		t.Fatal(err)
 	}
 	loc := dataLocation{Dir: filepath.Join(root, "user", "data"), LegacyDB: source, Installed: true}
@@ -120,20 +120,20 @@ func TestInstalledDataMigrationRetainsSourceAndExistingTarget(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer target.close()
+	defer target.Close()
 	var value string
-	if err = target.db.QueryRow("SELECT value FROM settings WHERE key='migration'").Scan(&value); err != nil || value != "original" {
+	if err = fixtureDB(t, target).QueryRow("SELECT value FROM settings WHERE key='migration'").Scan(&value); err != nil || value != "original" {
 		t.Fatal(value, err)
 	}
-	target.db.Exec("UPDATE settings SET value='newer data' WHERE key='migration'")
+	fixtureDB(t, target).Exec("UPDATE settings SET value='newer data' WHERE key='migration'")
 	if err = prepareInstalledData(loc); err != nil {
 		t.Fatal(err)
 	}
-	target.db.QueryRow("SELECT value FROM settings WHERE key='migration'").Scan(&value)
+	fixtureDB(t, target).QueryRow("SELECT value FROM settings WHERE key='migration'").Scan(&value)
 	if value != "newer data" {
 		t.Fatal("existing installed data overwritten")
 	}
-	s.db.QueryRow("SELECT value FROM settings WHERE key='migration'").Scan(&value)
+	fixtureDB(t, s).QueryRow("SELECT value FROM settings WHERE key='migration'").Scan(&value)
 	if value != "original" {
 		t.Fatal("legacy source modified")
 	}
@@ -141,14 +141,14 @@ func TestInstalledDataMigrationRetainsSourceAndExistingTarget(t *testing.T) {
 
 func TestBackupFailurePreservesExistingBackup(t *testing.T) {
 	root := t.TempDir()
-	s := populatedStore(t, filepath.Join(root, "live.db"))
+	s := populatedStore(t, filepath.Join(root, "fixtureDB(t, live)"))
 	backup := filepath.Join(root, "backup.db")
 	original := []byte("existing backup must survive failed operation")
 	if err := os.WriteFile(backup, original, 0600); err != nil {
 		t.Fatal(err)
 	}
-	s.close()
-	if err := s.backupTo(backup); err == nil {
+	s.Close()
+	if err := s.BackupTo(backup); err == nil {
 		t.Fatal("closed database backup succeeded")
 	}
 	got, err := os.ReadFile(backup)

@@ -29,7 +29,7 @@ func TestAIGenerationPreviewNeedsExplicitSave(t *testing.T) {
 	a := newApp()
 	a.ai.Config.Enabled = true
 	a.store, _ = openQuestionStore(filepath.Join(t.TempDir(), "data.db"))
-	defer a.store.close()
+	defer a.store.Close()
 	a.jobs = newLibraryJobs()
 	defer a.jobs.close()
 	updates := make(chan func(), 64)
@@ -48,13 +48,13 @@ func TestAIGenerationPreviewNeedsExplicitSave(t *testing.T) {
 	if len(a.ai.Preview) != 1 {
 		t.Fatal(a.ai.Message)
 	}
-	qs, _ := a.store.load()
+	qs, _ := a.store.LoadQuestions()
 	if len(qs) != 0 {
 		t.Fatal("generated questions saved without confirmation")
 	}
 	a.saveAIPreview()
 	pumpAI(t, a, updates)
-	qs, _ = a.store.load()
+	qs, _ = a.store.LoadQuestions()
 	if len(qs) != 1 || a.bank != "预览题库" {
 		t.Fatal(a.ai.Message, qs)
 	}

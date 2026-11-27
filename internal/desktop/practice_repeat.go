@@ -3,10 +3,6 @@
 package desktop
 
 import (
-	"database/sql"
-	"errors"
-	"strconv"
-
 	"github.com/ispacewang/quesora-native/internal/domain"
 )
 
@@ -43,23 +39,8 @@ func (a *app) toggleRepeatPractice() {
 	}
 	s, value := a.store, a.repeatPractice
 	a.enqueue(func() {
-		if err := s.saveRepeatPractice(value); err != nil {
+		if err := s.SaveRepeatPractice(value); err != nil {
 			a.publish(func() { a.libraryStatus = "重新作答设置保存失败：" + err.Error() })
 		}
 	})
-}
-func (s *questionStore) loadRepeatPractice() (bool, error) {
-	var raw string
-	err := s.db.QueryRow("SELECT value FROM settings WHERE key='repeat-practice'").Scan(&raw)
-	if errors.Is(err, sql.ErrNoRows) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return strconv.ParseBool(raw)
-}
-func (s *questionStore) saveRepeatPractice(value bool) error {
-	_, err := s.db.Exec("INSERT INTO settings(key,value) VALUES('repeat-practice',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", strconv.FormatBool(value))
-	return err
 }

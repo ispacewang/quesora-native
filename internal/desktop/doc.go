@@ -22,6 +22,6 @@
 // # 开发入口
 //
 // cmd/quesora/main.go 调用 Run；view.go/quiz.go 是原生视图入口；internal/importer 管理解析规则；
-// exam.go 是考试状态机；storage.go 管理存储；build-preview.py 与 packaging/
+// exam.go 是考试状态机；internal/storage 管理数据库；storage.go 是桌面业务适配器；build-preview.py 与 packaging/
 // 负责可复现分发。维护导览及验证命令见 docs/development.md。
 package desktop

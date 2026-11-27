@@ -51,7 +51,7 @@ func (a *app) persistPreferences() {
 	}
 	store := a.store
 	if a.enqueue(func() {
-		_, err := store.db.Exec("INSERT INTO settings(key,value) VALUES('learning-preferences',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", raw)
+		err := store.SetSetting("learning-preferences", raw)
 		if err != nil {
 			a.publish(func() { a.lastPreferences = ""; a.libraryStatus = "学习设置保存失败：" + err.Error() })
 		}
@@ -62,8 +62,7 @@ func (a *app) persistPreferences() {
 
 // restorePreferences 在启动加载题目后恢复显示状态；失效题库回退，随机排列可重建但题目按 ID 恢复。
 func (a *app) restorePreferences() error {
-	var raw string
-	err := a.store.db.QueryRow("SELECT value FROM settings WHERE key='learning-preferences'").Scan(&raw)
+	raw, err := a.store.Setting("learning-preferences")
 	if errors.Is(err, sql.ErrNoRows) {
 		if names := a.bankNames(); len(names) > 0 {
 			a.bank = names[0]
@@ -74,24 +73,37 @@ func (a *app) restorePreferences() error {
 	if err != nil {
 		return err
 	}
-	var p learningPreferences
-	if err = json.Unmarshal([]byte(raw), &p); err != nil {
+	p, err := decodeLearningPreferences(raw)
+	if err != nil {
 		return err
 	}
+	a.applyPreferences(p)
+	return nil
+}
+
+// decodeLearningPreferences validates persisted versions without consulting window or app state.
+func decodeLearningPreferences(raw string) (learningPreferences, error) {
+	var p learningPreferences
+	if err := json.Unmarshal([]byte(raw), &p); err != nil {
+		return p, err
+	}
 	if p.Version != 1 && p.Version != 2 {
-		return fmt.Errorf("不支持的学习设置版本")
+		return p, fmt.Errorf("不支持的学习设置版本")
 	}
 	if p.Version == 1 {
-		a.appearance = "light"
+		p.Appearance = "light"
 		if p.Dark {
-			a.appearance = "dark"
+			p.Appearance = "dark"
 		}
-	} else {
-		if !validAppearance(p.Appearance) {
-			return fmt.Errorf("外观设置无效")
-		}
-		a.appearance = p.Appearance
+	} else if !validAppearance(p.Appearance) {
+		return p, fmt.Errorf("外观设置无效")
 	}
+	return p, nil
+}
+
+// applyPreferences owns navigation and random ordering; it is only called on the UI thread.
+func (a *app) applyPreferences(p learningPreferences) {
+	a.appearance = p.Appearance
 	a.rounded = p.Rounded
 	a.dark, a.random, a.quick, a.shuffle = p.Dark, p.Random, p.Quick, p.Shuffle
 	a.leftOpen, a.rightOpen = p.LeftOpen, p.RightOpen
@@ -130,7 +142,6 @@ func (a *app) restorePreferences() error {
 		}
 	}
 	a.navigate(index)
-	return nil
 }
 
 func (a *app) toggleRandom() { a.random = !a.random; a.reorder(); a.navigate(0) }
