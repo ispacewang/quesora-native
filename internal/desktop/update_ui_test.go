@@ -30,9 +30,9 @@ func drainUpdate(t *testing.T, a *app, updates <-chan func()) {
 }
 func TestUpdateNativeConfirmationAndSafeInstallHandoff(t *testing.T) {
 	a := newApp()
-	a.store = restorableStore(t, filepath.Join(t.TempDir(), "data", "live.db"))
-	defer a.store.close()
-	a.questions, _ = a.store.load()
+	a.store = restorableStore(t, filepath.Join(t.TempDir(), "data", "fixtureDB(t, live)"))
+	defer a.store.Close()
+	a.questions, _ = a.store.LoadQuestions()
 	a.bank = a.questions[0].Bank
 	a.navigate(0)
 	queue := make(chan func(), 64)
@@ -83,7 +83,7 @@ func TestUpdateNativeConfirmationAndSafeInstallHandoff(t *testing.T) {
 	if !launched || !closed || a.updates.failed {
 		t.Fatal(a.updates.message)
 	}
-	backups, _ := filepath.Glob(filepath.Join(filepath.Dir(a.store.path), "backups", "before-update-*.db"))
+	backups, _ := filepath.Glob(filepath.Join(filepath.Dir(a.store.path()), "backups", "before-update-*.db"))
 	if len(backups) != 1 {
 		t.Fatal("pre-update data backup missing", backups)
 	}

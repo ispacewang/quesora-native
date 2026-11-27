@@ -78,8 +78,8 @@ func TestRepeatModeSettingPersists(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.close()
-	if value, err := s.loadRepeatPractice(); err != nil || value {
+	defer s.Close()
+	if value, err := s.LoadRepeatPractice(); err != nil || value {
 		t.Fatal("default preference", value, err)
 	}
 	a := newApp()
@@ -91,14 +91,14 @@ func TestRepeatModeSettingPersists(t *testing.T) {
 	done := make(chan struct{})
 	a.enqueue(func() { close(done) })
 	<-done
-	value, err := s.loadRepeatPractice()
+	value, err := s.LoadRepeatPractice()
 	if err != nil || !value {
 		t.Fatal("preference not saved", value, err)
 	}
-	if err = s.saveRepeatPractice(false); err != nil {
+	if err = s.SaveRepeatPractice(false); err != nil {
 		t.Fatal(err)
 	}
-	if value, err = s.loadRepeatPractice(); err != nil || value {
+	if value, err = s.LoadRepeatPractice(); err != nil || value {
 		t.Fatal("preference not restored", value, err)
 	}
 }

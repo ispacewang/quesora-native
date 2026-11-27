@@ -79,17 +79,17 @@ func Run() {
 		a.store, initErr = openQuestionStore(filepath.Join(*dataDir, "questions.db"))
 	}
 	if initErr == nil {
-		defer a.store.close()
-		a.questions, initErr = a.store.load()
+		defer a.store.Close()
+		a.questions, initErr = a.store.LoadQuestions()
 		if initErr == nil {
 			var answers map[string]domain.Response
 			var stars map[string]bool
-			answers, stars, initErr = a.store.loadPractice()
+			answers, stars, initErr = a.store.LoadPractice()
 			if initErr == nil {
 				a.answers = answers
 				a.starred = stars
 				var preferenceErr error
-				a.repeatPractice, preferenceErr = a.store.loadRepeatPractice()
+				a.repeatPractice, preferenceErr = a.store.LoadRepeatPractice()
 				if preferenceErr != nil {
 					a.libraryStatus = "学习设置读取失败，已使用默认显示方式"
 				}
@@ -140,7 +140,7 @@ func Run() {
 			}
 			return paths[0], nil
 		}
-		a.showDataFolder = func() error { return mygo.Shell.OpenPath(filepath.Dir(a.store.path)) }
+		a.showDataFolder = func() error { return mygo.Shell.OpenPath(filepath.Dir(a.store.path())) }
 		a.pickFile = func() ([]string, error) {
 			return mygo.Dialog.Open(mygo.OpenDialogOptions{Parent: a.win, Title: "上传题库", Filters: []mygo.FileFilter{{Name: "题库文件", Extensions: []string{"xlsx", "xls", "csv"}}}})
 		}

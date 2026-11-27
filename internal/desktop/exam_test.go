@@ -145,14 +145,14 @@ func TestExamHistoryRoundTripAndPDF(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.close()
+	defer s.Close()
 	e := examFixture(t)
 	e.submit(time.Now())
 	data, err := json.Marshal(e)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = s.db.Exec("INSERT INTO settings(key,value) VALUES(?,?)", "exam:"+e.ID, data); err != nil {
+	if _, err = fixtureDB(t, s).Exec("INSERT INTO settings(key,value) VALUES(?,?)", "exam:"+e.ID, data); err != nil {
 		t.Fatal(err)
 	}
 	rs, err := s.loadHistory()

@@ -1,4 +1,4 @@
-// Package storage provides SQLite snapshot infrastructure.
+// SQLite 快照基础设施：安全读取旧库并发布包含 WAL 已提交数据的一致性备份。
 package storage
 
 import (

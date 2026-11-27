@@ -39,12 +39,12 @@ func TestMistakeNoteEditorPersistsAndExports(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	defer s.close()
+	defer s.Close()
 	batch := importer.Result{Banks: []importer.Bank{{Name: "数学基础", Questions: demoQuestions()[:2]}}}
-	if e = s.importBanks(batch); e != nil {
+	if e = s.ImportBanks(batch); e != nil {
 		t.Fatal(e)
 	}
-	a.questions, e = s.load()
+	a.questions, e = s.LoadQuestions()
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -55,7 +55,7 @@ func TestMistakeNoteEditorPersistsAndExports(t *testing.T) {
 	updates := make(chan func(), 32)
 	a.dispatch = func(f func()) { updates <- f }
 	a.answers[q.ID] = domain.Response{Choice: 1, Correct: false}
-	if e = s.saveResponse(q.ID, a.answers[q.ID]); e != nil {
+	if e = s.SaveResponse(q.ID, a.answers[q.ID]); e != nil {
 		t.Fatal(e)
 	}
 	a.navigate(0)
@@ -68,7 +68,7 @@ func TestMistakeNoteEditorPersistsAndExports(t *testing.T) {
 	click(t, tt, "保存备注")
 	drainMistakeJobs(t, a, updates)
 	tt.Frame()
-	got, _, e := s.loadPractice()
+	got, _, e := s.LoadPractice()
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -134,18 +134,18 @@ func mistakeNoteFixture(t *testing.T) (*app, *questionStore, <-chan func()) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	t.Cleanup(func() { s.close() })
-	if e = s.importBanks(importer.Result{Banks: []importer.Bank{{Name: "数学基础", Questions: demoQuestions()[:2]}}}); e != nil {
+	t.Cleanup(func() { s.Close() })
+	if e = s.ImportBanks(importer.Result{Banks: []importer.Bank{{Name: "数学基础", Questions: demoQuestions()[:2]}}}); e != nil {
 		t.Fatal(e)
 	}
-	a.questions, e = s.load()
+	a.questions, e = s.LoadQuestions()
 	if e != nil {
 		t.Fatal(e)
 	}
 	a.store = s
 	q := a.questions[0]
 	a.answers[q.ID] = domain.Response{Choice: 1}
-	if e = s.saveResponse(q.ID, a.answers[q.ID]); e != nil {
+	if e = s.SaveResponse(q.ID, a.answers[q.ID]); e != nil {
 		t.Fatal(e)
 	}
 	a.jobs = newLibraryJobs()
@@ -164,7 +164,7 @@ func TestMistakeNoteKeepsLatestGradeAndClearsDurably(t *testing.T) {
 	// Re-answer before the UI receives the database acknowledgement.
 	a.recordPracticeAnswer(q, domain.Response{Choice: q.Answer, Correct: true})
 	drainMistakeJobs(t, a, updates)
-	got, _, e := s.loadPractice()
+	got, _, e := s.LoadPractice()
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -178,12 +178,12 @@ func TestMistakeNoteKeepsLatestGradeAndClearsDurably(t *testing.T) {
 	// This grade captured the old note while the clear is still queued.
 	a.recordPracticeAnswer(q, domain.Response{Choice: 1})
 	drainMistakeJobs(t, a, updates)
-	reopened, e := openQuestionStore(s.path)
+	reopened, e := openQuestionStore(s.path())
 	if e != nil {
 		t.Fatal(e)
 	}
-	defer reopened.close()
-	got, _, e = reopened.loadPractice()
+	defer reopened.Close()
+	got, _, e = reopened.LoadPractice()
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -196,7 +196,7 @@ func TestMistakeNoteFailureKeepsDraft(t *testing.T) {
 	a, s, updates := mistakeNoteFixture(t)
 	q, _ := a.current()
 	a.mistakeNoteID, a.mistakeNote = q.ID, "keep this draft"
-	if _, e := s.db.Exec("DELETE FROM practice"); e != nil {
+	if _, e := fixtureDB(t, s).Exec("DELETE FROM practice"); e != nil {
 		t.Fatal(e)
 	}
 	a.saveMistakeNote()

@@ -11,16 +11,16 @@ import (
 
 func TestRestoreRequiresConfirmationAndReloadsNativeState(t *testing.T) {
 	a := newApp()
-	a.store = restorableStore(t, filepath.Join(t.TempDir(), "live.db"))
-	defer a.store.close()
-	a.questions, _ = a.store.load()
+	a.store = restorableStore(t, filepath.Join(t.TempDir(), "fixtureDB(t, live)"))
+	defer a.store.Close()
+	a.questions, _ = a.store.LoadQuestions()
 	a.bank = a.questions[0].Bank
 	a.navigate(0)
 	source := restorableStore(t, filepath.Join(t.TempDir(), "备份.db"))
-	defer source.close()
-	source.db.Exec("UPDATE banks SET name='恢复后的题库'")
-	source.saveRepeatPractice(true)
-	a.pickRestore = func() (string, error) { return source.path, nil }
+	defer source.Close()
+	fixtureDB(t, source).Exec("UPDATE banks SET name='恢复后的题库'")
+	source.SaveRepeatPractice(true)
+	a.pickRestore = func() (string, error) { return source.path(), nil }
 	updates := make(chan func(), 64)
 	a.dispatch = func(fn func()) { updates <- fn }
 	a.jobs = newLibraryJobs()

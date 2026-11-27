@@ -2,29 +2,12 @@
 package desktop
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/egoist/mygo/ui"
 
 	"github.com/ispacewang/quesora-native/internal/domain"
 )
-
-// saveMistakeNote 只更新备注字段，避免等待保存期间的新作答被旧作答覆盖。
-func (s *questionStore) saveMistakeNote(id, note string) error {
-	result, err := s.db.Exec("UPDATE practice SET payload=json_set(payload,'$.Note',?) WHERE question_id=?", note, id)
-	if err != nil {
-		return err
-	}
-	changed, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if changed != 1 {
-		return fmt.Errorf("答题记录尚未保存，请重新提交后保存备注")
-	}
-	return nil
-}
 
 func (a *app) saveMistakeNote() {
 	q, ok := a.current()
@@ -40,7 +23,7 @@ func (a *app) saveMistakeNote() {
 	a.mistakeNoteSaving = true
 	a.mistakeNoteError = ""
 	if !a.enqueue(func() {
-		err := store.saveMistakeNote(id, note)
+		err := store.SaveMistakeNote(id, note)
 		a.publish(func() {
 			a.mistakeNoteSaving = false
 			// Reset/restore can replace practice records while this acknowledgement is queued.

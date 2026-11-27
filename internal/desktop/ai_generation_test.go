@@ -51,7 +51,7 @@ func TestAIGenerationKeepsUniqueQuestionsAcrossBatches(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	defer a.store.close()
+	defer a.store.Close()
 	a.jobs = newLibraryJobs()
 	defer a.jobs.close()
 	calls := 0
@@ -81,13 +81,13 @@ func TestAIGenerationKeepsUniqueQuestionsAcrossBatches(t *testing.T) {
 	if !strings.Contains(a.ai.Message, "15") || !strings.Contains(a.ai.Message, "14") || !strings.Contains(a.ai.Message, "重复") {
 		t.Fatal("partial result not explained", a.ai.Message)
 	}
-	qs, e := a.store.load()
+	qs, e := a.store.LoadQuestions()
 	if e != nil || len(qs) != 0 {
 		t.Fatal("preview saved without confirmation", e)
 	}
 	a.saveAIPreview()
 	pumpAI(t, a, updates)
-	qs, e = a.store.load()
+	qs, e = a.store.LoadQuestions()
 	if e != nil || len(qs) != 14 {
 		t.Fatal("unique preview not saved", len(qs), e)
 	}

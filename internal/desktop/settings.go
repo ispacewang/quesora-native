@@ -47,7 +47,7 @@ func (a *app) backupData() {
 			a.persistPreferences()
 			store := a.store
 			if !a.enqueue(func() {
-				err := store.backupTo(filename)
+				err := store.BackupTo(filename)
 				a.publish(func() {
 					a.backupBusy = false
 					a.backupError = err != nil
@@ -149,7 +149,7 @@ func (a *app) settingsDialog(c *ui.Context) {
 				ui.Text(c, "数据与备份").FontSize(11).FontWeight(600).TextColor(t.TextMuted)
 				ui.Text(c, "题库、答题记录、已保存的考试和学习设置会一起备份。").FillWidth().FontSize(12).LineHeight(1.6)
 				if a.store != nil {
-					ui.Text(c, filepath.Dir(a.store.path)).Label("当前数据目录").FillWidth().FontSize(11).TextColor(t.TextMuted).Selectable()
+					ui.Text(c, filepath.Dir(a.store.path())).Label("当前数据目录").FillWidth().FontSize(11).TextColor(t.TextMuted).Selectable()
 				} else {
 					ui.Text(c, "数据目录暂不可用，请检查启动时的错误提示。").FillWidth().FontSize(12).TextColor(t.Danger)
 				}

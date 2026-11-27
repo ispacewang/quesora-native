@@ -126,10 +126,10 @@ func (a *app) saveAIPreview() {
 	a.ai.Saving = true
 	a.importBusy = true
 	if !a.enqueue(func() {
-		e := s.importBanks(batch)
+		e := s.ImportBanks(batch)
 		var loaded []domain.Question
 		if e == nil {
-			loaded, e = s.load()
+			loaded, e = s.LoadQuestions()
 		}
 		a.publish(func() {
 			a.ai.Saving = false

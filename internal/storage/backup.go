@@ -1,18 +1,15 @@
 // SQLite 一致性快照与发布。读取已提交 WAL，校验完整性后才替换备份，禁止覆盖正在使用的库。
 
-package desktop
+package storage
 
 import (
 	"fmt"
-
-	"github.com/ispacewang/quesora-native/internal/storage"
 	"os"
 	"path/filepath"
 	"strings"
-	// backupTo 保护活动数据库及其日志路径/硬链接别名；成功前不会替换已有目标备份。
 )
 
-func (s *questionStore) backupTo(filename string) error {
+func (s *Store) BackupTo(filename string) error {
 	source, err := filepath.Abs(s.path)
 	if err != nil {
 		return err
@@ -31,5 +28,5 @@ func (s *questionStore) backupTo(filename string) error {
 			return fmt.Errorf("不能覆盖正在使用的数据文件")
 		}
 	}
-	return storage.Snapshot(s.db, target, true)
+	return Snapshot(s.db, target, true)
 }

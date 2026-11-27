@@ -49,7 +49,7 @@ func (a *app) configureAI() {
 	if a.store == nil {
 		return
 	}
-	a.ai.Path = filepath.Join(filepath.Dir(a.store.path), "ai-settings.bin")
+	a.ai.Path = filepath.Join(filepath.Dir(a.store.path()), "ai-settings.bin")
 	c, e := ai.LoadConfig(a.ai.Path)
 	if e != nil {
 		a.libraryStatus = e.Error()

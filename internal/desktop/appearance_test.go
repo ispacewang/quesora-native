@@ -39,12 +39,12 @@ func TestAppearanceThreeChoicesAndNoTitlebarToggle(t *testing.T) {
 }
 func TestAppearanceMigrationAndSystemUpdates(t *testing.T) {
 	s := populatedStore(t, filepath.Join(t.TempDir(), "questions.db"))
-	defer s.close()
+	defer s.Close()
 	a := newApp()
 	a.store = s
-	a.questions, _ = s.load()
+	a.questions, _ = s.LoadQuestions()
 	raw, _ := json.Marshal(learningPreferences{Version: 1, Dark: true})
-	s.db.Exec("INSERT INTO settings(key,value) VALUES('learning-preferences',?)", string(raw))
+	fixtureDB(t, s).Exec("INSERT INTO settings(key,value) VALUES('learning-preferences',?)", string(raw))
 	if e := a.restorePreferences(); e != nil || a.appearance != "dark" {
 		t.Fatal("old dark choice not migrated", e)
 	}

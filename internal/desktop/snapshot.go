@@ -51,7 +51,7 @@ func (a *app) configureScene(scene string) {
 	case "ai-preview":
 		a.ai.Config.Enabled = true
 		a.openAI("generate")
-		a.store = &questionStore{path: "data/questions.db"}
+		a.store = &questionStore{previewPath: "data/questions.db"}
 		a.ai.Preview = append([]domain.Question(nil), a.questions[:3]...)
 		a.ai.Message = "已生成 3 道题，请检查后保存。"
 	case "ai-diagnose":
@@ -64,13 +64,13 @@ func (a *app) configureScene(scene string) {
 		a.settingsOpen = true
 		a.restoreOpen = true
 		a.restorePath = "Quesora备份-20261103.db"
-		a.store = &questionStore{path: "data/questions.db"}
+		a.store = &questionStore{previewPath: "data/questions.db"}
 	case "update":
 		a.updates.confirmOpen = true
 		a.updates.installed = true
 	case "settings":
 		a.settingsOpen = true
-		a.store = &questionStore{path: "data/questions.db"}
+		a.store = &questionStore{previewPath: "data/questions.db"}
 	case "history":
 		a.historyOpen = true
 	case "many-banks":
@@ -128,7 +128,7 @@ func (a *app) configureScene(scene string) {
 		r := a.answers[q.ID]
 		r.Note = "先配方成 (x − 1)²，再判断最小值；不要把顶点横坐标当成函数值。"
 		a.answers[q.ID] = r
-		a.store = &questionStore{path: "data/questions.db"}
+		a.store = &questionStore{previewPath: "data/questions.db"}
 	case "wrong":
 		a.choose(0)
 		a.submit()

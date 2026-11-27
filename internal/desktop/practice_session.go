@@ -127,7 +127,7 @@ func (a *app) restartCycle() {
 	if a.store != nil {
 		s, name := a.store, a.bank
 		a.enqueue(func() {
-			_, err := s.db.Exec("DELETE FROM practice WHERE question_id IN (SELECT q.id FROM questions q JOIN banks b ON b.id=q.bank_id WHERE b.name=?)", name)
+			err := s.ClearPractice(name)
 			if err != nil {
 				a.publish(func() { a.libraryStatus = "重新练习失败：" + err.Error() })
 			}

@@ -11,9 +11,9 @@ import (
 func TestCornerStyleSwitchPersistsAndRestores(t *testing.T) {
 	a := newApp()
 	s := populatedStore(t, filepath.Join(t.TempDir(), "questions.db"))
-	defer s.close()
+	defer s.Close()
 	a.store = s
-	a.questions, _ = s.load()
+	a.questions, _ = s.LoadQuestions()
 	a.jobs = newLibraryJobs()
 	defer a.jobs.close()
 	updates := make(chan func(), 32)
@@ -30,7 +30,7 @@ func TestCornerStyleSwitchPersistsAndRestores(t *testing.T) {
 	}
 	next := newApp()
 	next.store = s
-	next.questions, _ = s.load()
+	next.questions, _ = s.LoadQuestions()
 	if e := next.restorePreferences(); e != nil {
 		t.Fatal(e)
 	}
@@ -99,20 +99,19 @@ func TestRoundedQuestionCornersDoNotReflow(t *testing.T) {
 }
 func TestOldPreferencesDefaultToSquareCorners(t *testing.T) {
 	s := populatedStore(t, filepath.Join(t.TempDir(), "questions.db"))
-	defer s.close()
-	_, e := s.db.Exec("INSERT INTO settings(key,value) VALUES('learning-preferences',?)", `{"Version":2,"Appearance":"light"}`)
+	defer s.Close()
+	_, e := fixtureDB(t, s).Exec("INSERT INTO settings(key,value) VALUES('learning-preferences',?)", `{"Version":2,"Appearance":"light"}`)
 	if e != nil {
 		t.Fatal(e)
 	}
 	a := newApp()
 	a.store = s
-	a.questions, _ = s.load()
+	a.questions, _ = s.LoadQuestions()
 	a.rounded = true
 	if e = a.restorePreferences(); e != nil || a.rounded {
 		t.Fatal("old preferences should remain square", e)
 	}
-	next := newApp()
-	next.rounded = true
+	next := &restorableState{Preferences: &learningPreferences{Version: 2, Appearance: "system", Rounded: true}}
 	a.acceptRestoredState(next)
 	if !a.rounded {
 		t.Fatal("backup restore lost corner style")

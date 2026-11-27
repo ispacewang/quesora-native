@@ -155,8 +155,8 @@ func (a *app) confirmUpdateInstall() {
 	if !a.enqueue(func() {
 		err := updater.VerifyDownloaded(downloaded)
 		if err == nil {
-			safety := filepath.Join(filepath.Dir(store.path), "backups", "before-update-"+time.Now().UTC().Format("20060102T150405.000000000")+".db")
-			err = store.backupTo(safety)
+			safety := filepath.Join(filepath.Dir(store.path()), "backups", "before-update-"+time.Now().UTC().Format("20060102T150405.000000000")+".db")
+			err = store.BackupTo(safety)
 		}
 		if err == nil {
 			err = launch(downloaded.Path)

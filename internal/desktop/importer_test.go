@@ -143,42 +143,42 @@ func TestStoreReopenRollbackAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = s.importBanks(result); err != nil {
+	if err = s.ImportBanks(result); err != nil {
 		t.Fatal(err)
 	}
-	qs, err := s.load()
+	qs, err := s.LoadQuestions()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = s.saveResponse(qs[0].ID, domain.Response{Choice: 2, Correct: true, OptionOrder: []int{3, 0, 1, 2}}); err != nil {
+	if err = s.SaveResponse(qs[0].ID, domain.Response{Choice: 2, Correct: true, OptionOrder: []int{3, 0, 1, 2}}); err != nil {
 		t.Fatal(err)
 	}
 	batch := importer.Result{Banks: []importer.Bank{{Name: "应回滚的新题库", Questions: result.Banks[0].Questions}, result.Banks[0]}}
-	if err = s.importBanks(batch); err == nil {
+	if err = s.ImportBanks(batch); err == nil {
 		t.Fatal("duplicate accepted")
 	}
-	s.close()
+	s.Close()
 	s, err = openQuestionStore(dbPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.close()
-	qs, err = s.load()
+	defer s.Close()
+	qs, err = s.LoadQuestions()
 	if err != nil || len(qs) != 5 {
 		t.Fatalf("rollback/reopen: %v %d", err, len(qs))
 	}
-	answers, _, err := s.loadPractice()
+	answers, _, err := s.LoadPractice()
 	if err != nil || !answers[qs[0].ID].Correct || domain.ResponseLetters(qs[0], answers[qs[0].ID], qs[0].Answer) != "C" {
 		t.Fatalf("practice: %v %+v", err, answers)
 	}
-	if err = s.deleteBank(result.Banks[0].Name); err != nil {
+	if err = s.DeleteBank(result.Banks[0].Name); err != nil {
 		t.Fatal(err)
 	}
-	qs, err = s.load()
+	qs, err = s.LoadQuestions()
 	if err != nil || len(qs) != 0 {
 		t.Fatal("delete", err)
 	}
-	answers, _, err = s.loadPractice()
+	answers, _, err = s.LoadPractice()
 	if err != nil || len(answers) != 0 {
 		t.Fatal("cascade", err)
 	}
@@ -215,7 +215,7 @@ func TestUploadUIEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer a.store.close()
+	defer a.store.Close()
 	a.jobs = newLibraryJobs()
 	defer a.jobs.close()
 	updates := make(chan func(), 64)
