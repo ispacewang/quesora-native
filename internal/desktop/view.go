@@ -13,7 +13,7 @@ const toolbarHeight float32 = 40.667
 
 // view 在一次原生构建内组装页面和对话框；快捷键只有在对应练习作用域可用时才注册。
 func (a *app) view(c *ui.Context) {
-	practiceBlocked := a.ai.Open || a.exam != nil || a.examSetupOpen || a.historyOpen || a.settingsOpen ||
+	practiceBlocked := a.share.open || a.ai.Open || a.exam != nil || a.examSetupOpen || a.historyOpen || a.settingsOpen ||
 		a.restoreOpen || a.restoreBusy || a.updates.confirmOpen || a.updates.installing ||
 		a.importOpen || a.deleteOpen || a.helpOpen || a.resetPracticeOpen || a.finishOpen
 	a.updateQuickAdvance(c, practiceBlocked)
@@ -70,6 +70,7 @@ func (a *app) view(c *ui.Context) {
 	a.restoreDialog(c)
 	a.updateInstallDialog(c)
 	a.aiDialogs(c)
+	a.shareDialog(c)
 	if a.libraryStatus != "" && a.libraryStatus != "题库与答题记录自动保存" && a.libraryStatus != a.toastLast {
 		a.toastLast = a.libraryStatus
 		c.Toast(a.libraryStatus)

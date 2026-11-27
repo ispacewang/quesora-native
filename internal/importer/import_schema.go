@@ -3,6 +3,7 @@
 package importer
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/bits"
 	"regexp"
@@ -13,6 +14,7 @@ import (
 
 	"golang.org/x/text/unicode/norm"
 
+	"github.com/ispacewang/quesora-native/internal/diagram"
 	"github.com/ispacewang/quesora-native/internal/domain"
 )
 
@@ -70,6 +72,8 @@ func headerField(s string) (string, int) {
 		key   string
 		names []string
 	}{
+		{"diagramSvg", []string{"diagramsvg", "配图svg", "题目配图svg", "svg配图"}},
+		{"diagram", []string{"diagram", "配图", "图形配置", "diagramjson", "配图json"}},
 		{"prompt", []string{"题干", "试题内容", "题目内容", "试题题干", "题目题干", "问题内容", "问题描述", "试题描述", "题目描述", "考题内容", "题目", "试题", "问题", "question", "prompt", "stem", "questiontext", "questionstem", "题干内容", "考题正文"}},
 		{"answer", []string{"答案", "正确答案", "标准答案", "参考答案", "试题答案", "题目答案", "参考解答", "正确选项", "答案选项", "answer", "correctanswer", "key"}},
 		{"kind", []string{"题型", "题目类型", "试题类型", "题目题型", "试题题型", "类型", "questiontype", "type"}},
@@ -409,6 +413,31 @@ func questionsFromRows(sheet string, rows [][]string) ([]domain.Question, []stri
 			continue
 		}
 		q := domain.Question{Prompt: prompt, Kind: kind, Explanation: get("explanation"), Meta: map[string]any{"来源工作表": sheet, "来源行": index + 1, "原始答案": rawAnswer, "原始题型": get("kind")}}
+		if raw := get("diagram"); raw != "" {
+			if strings.HasPrefix(strings.TrimSpace(raw), "<") {
+				if svg, err := diagram.SanitizeSVG(raw); err == nil {
+					q.Meta["diagramSvg"] = svg
+				} else {
+					warn("无法读取 SVG 配图，已保留题目")
+				}
+			} else if cfg, err := diagram.Parse([]byte(raw)); err == nil {
+				if _, err = cfg.SVG(); err == nil {
+					q.Meta["diagram"] = json.RawMessage(raw)
+				} else {
+					warn("无法绘制图形，已保留题目")
+				}
+			} else {
+				warn("无法读取图形配置，已保留题目")
+			}
+		}
+		if raw := get("diagramSvg"); raw != "" {
+			if svg, err := diagram.SanitizeSVG(raw); err == nil {
+				q.Meta["diagramSvg"] = svg
+			} else {
+				warn("无法读取 SVG 配图，已保留题目")
+			}
+		}
+
 		for _, key := range []string{"一级纲要", "二级纲要", "题目分类", "题目依据", "试题分数", "试题编号", "备注"} {
 			q.Meta[key] = get(key)
 		}

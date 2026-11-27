@@ -3,6 +3,7 @@ package desktop
 
 import (
 	"strings"
+	"sync"
 	"unicode/utf8"
 
 	"github.com/egoist/mygo/ui"
@@ -20,14 +21,17 @@ type formulaIcon struct {
 }
 
 // Views can rebuild every frame; retain a small FIFO of immutable glyph images,
-// including failed parses. The cache is only accessed from the UI thread.
+// including failed parses. Share previews may render concurrently offscreen.
 var formulaCache = struct {
+	sync.Mutex
 	keys  [64]formulaKey
 	next  int
 	icons map[formulaKey]formulaIcon
 }{icons: make(map[formulaKey]formulaIcon, 64)}
 
 func cachedFormula(key formulaKey) formulaIcon {
+	formulaCache.Lock()
+	defer formulaCache.Unlock()
 	if icon, ok := formulaCache.icons[key]; ok {
 		return icon
 	}

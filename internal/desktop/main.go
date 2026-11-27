@@ -47,6 +47,20 @@ func Run() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		if *scene == "share-card" {
+			preview, err := renderShare(captureShare(a.questions[0], nil))
+			if err == nil {
+				err = png.Encode(f, preview)
+			}
+			closeErr := f.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+			if closeErr != nil {
+				log.Fatal(closeErr)
+			}
+			return
+		}
 		preview := ui.NewTester(a.view, 1450, 800)
 		if *scene == "mistake-note" {
 			// Show the note editor below the result, without touching real user data.
@@ -114,6 +128,7 @@ func Run() {
 			}
 		}
 	}
+	a.loadShareDirectory()
 	a.configureAI()
 	a.jobs = newLibraryJobs()
 	defer a.jobs.close()
@@ -129,6 +144,7 @@ func Run() {
 			log.Print("设置窗口图标失败：", iconErr)
 		}
 		a.dispatch = a.win.Update
+		a.configureShare(a.win)
 		a.configureUpdater()
 		a.pickBackup = func() (string, error) {
 			return mygo.Dialog.Save(mygo.SaveDialogOptions{Parent: a.win, Title: "备份全部题库与记录", DefaultPath: "Quesora备份-" + time.Now().Format("20060102-150405") + ".db", Filters: []mygo.FileFilter{{Name: "Quesora 数据备份", Extensions: []string{"db"}}}})

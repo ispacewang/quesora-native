@@ -23,6 +23,7 @@ type State struct {
 	RepeatPractice bool
 	Learning       *string
 	History        []Setting
+	ShareDirectory string
 }
 
 // ReadState 校验原生表结构、完整性及关联，并读取可独立解释的快照。
@@ -82,6 +83,10 @@ func (s *Store) ReadState() (State, error) {
 	}
 	if err == nil {
 		state.Learning = &raw
+	}
+	state.ShareDirectory, err = s.Setting("share-download-directory")
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return state, err
 	}
 	return state, nil
 }
