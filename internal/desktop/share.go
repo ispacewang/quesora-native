@@ -50,43 +50,49 @@ func captureShare(q domain.Question, order []int) shareCard {
 }
 
 func (s shareCard) view(c *ui.Context) {
-	ink, muted, paper, accent, line := ui.Hex("#2C251F"), ui.Hex("#8C4729"), ui.Hex("#FFFCF7"), ui.Hex("#E8662A"), ui.Hex("#E8DCCD")
-	ui.Column(c.Key("share-paper")).Label("分享图正文").FillWidth().Shrink(0).Padding(34, 40, 38, 40).Background(paper).Children(func() {
-		ui.Row(c.Key("share-brand")).FillWidth().AlignItems(ui.Center).Gap(7).Margin(0, 0, 20, 0).Children(func() {
-			ui.Box(c.Key("accent")).Size(52, 5).Radius(2.5).Background(accent)
-			ui.Spacer(c)
-			if appIcon != nil {
-				ui.Image(c, appIcon).Size(16, 16).Fit(ui.Contain).Label("Quesora Logo")
-			}
-			ui.Text(c, "Quesora").FontSize(12).FontWeight(600).TextColor(ui.Hex("#715B50"))
-		})
-		mathTextPrefix(c, "", s.prompt, 24, ink, 448).FillWidth().FontWeight(600).LineHeight(1.53)
-		if s.figure.svg != nil {
-			w, h := s.figure.svg.Size()
-			ui.Box(c.Key("share-figure")).FillWidth().Height(min(290, max(105, 450*h/w))).Margin(18, 0, 0, 0).
-				Background(ui.Hex("#FFFFFF")).Radius(12).Border(1, line).Clip().Draw(func(p *ui.Painter, r ui.Rect) {
-				if r.W > 20 && r.H > 20 {
-					p.Image(s.figure.svg, ui.Rect{X: r.X + 10, Y: r.Y + 10, W: r.W - 20, H: r.H - 20}, ui.Contain)
+	ink, muted := ui.Hex("#28221D"), ui.Hex("#6E584B")
+	accent, lightAccent := ui.Hex("#D55C24"), ui.Hex("#F7E5D6")
+	ui.Column(c.Key("share-canvas")).Label("分享图正文").FillWidth().Shrink(0).Padding(24).
+		Background(ui.Hex("#EEE5DA")).Children(func() {
+		ui.Column(c.Key("share-paper")).FillWidth().Padding(36, 40, 42, 40).Radius(20).
+			Background(ui.Hex("#FFFDFA")).Children(func() {
+			ui.Row(c.Key("share-brand")).FillWidth().AlignItems(ui.Center).Gap(8).Margin(0, 0, 30, 0).Children(func() {
+				ui.Box(c.Key("accent")).Size(34, 4).Radius(2).Background(accent)
+				ui.Spacer(c)
+				if appIcon != nil {
+					ui.Image(c, appIcon).Size(18, 18).Fit(ui.Contain).Label("Quesora Logo")
 				}
+				ui.Text(c, "Quesora").FontSize(13).FontWeight(600).TextColor(muted)
 			})
-		}
-		if len(s.options) > 0 {
-			ui.Column(c.Key("share-options")).FillWidth().Margin(24, 0, 0, 0).Children(func() {
+			mathTextPrefix(c, "", s.prompt, 26, ink, 500).FillWidth().FontWeight(600).LineHeight(1.58)
+			if s.figure.svg != nil {
+				w, h := s.figure.svg.Size()
+				ui.Box(c.Key("share-figure")).FillWidth().Height(min(280, max(132, 500*h/w))).Margin(28, 0, 0, 0).
+					Background(ui.Hex("#F8F7F4")).Radius(14).Clip().Draw(func(p *ui.Painter, r ui.Rect) {
+					const inset = 16
+					p.Image(s.figure.svg, ui.Rect{X: r.X + inset, Y: r.Y + inset, W: r.W - 2*inset, H: r.H - 2*inset}, ui.Contain)
+				})
+			}
+			if len(s.options) == 0 {
+				return
+			}
+			ui.Column(c.Key("share-options")).FillWidth().Gap(12).Margin(32, 0, 0, 0).Children(func() {
 				for i, opt := range s.options {
-					ui.Row(c.Key(i)).FillWidth().MinHeight(52).Padding(10, 0).Gap(16).AlignItems(ui.Start).BorderWidth(1, 0, 0, 0).BorderColor(line).Children(func() {
-						ui.Box(c).Size(31, 31).Shrink(0).Radius(8).Background(ui.Hex("#F9E8DC")).Center().Children(func() {
-							ui.Text(c, string(rune('A'+i))).FontSize(16).FontWeight(700).TextColor(muted)
+					ui.Row(c.Key(i)).FillWidth().Padding(14, 16).Gap(16).AlignItems(ui.Start).
+						Background(ui.Hex("#F6F2ED")).Radius(12).Children(func() {
+						ui.Box(c).Size(29, 29).Shrink(0).Radius(14.5).Background(lightAccent).Center().Children(func() {
+							ui.Text(c, string(rune('A'+i))).FontSize(14).FontWeight(600).TextColor(ui.Hex("#8A3F24"))
 						})
-						mathTextPrefix(c, "", opt, 19, ink, 400).Grow(1).MinWidth(0).LineHeight(1.55).Margin(3, 0, 0, 0)
+						mathTextPrefix(c, "", opt, 18, ink, 420).Grow(1).MinWidth(0).LineHeight(1.6).Margin(1, 0, 0, 0)
 					})
 				}
 			})
-		}
+		})
 	})
 }
 
 func renderShare(card shareCard) (*image.RGBA, error) {
-	const width = 560
+	const width = 640
 	const ceiling = 4096
 	tester := ui.NewTester(card.view, width, ceiling)
 	box, ok := tester.Find("分享图正文")
@@ -94,6 +100,11 @@ func renderShare(card shareCard) (*image.RGBA, error) {
 		return nil, fmt.Errorf("题目太长，无法生成单张图片")
 	}
 	return ui.Render(card.view, width, int(math.Ceil(float64(box.H))), 2), nil
+}
+
+func shareQuestionButton(c *ui.Context, key string, open func()) {
+	const label = "分享题目"
+	control(c, key, "", shareIcon, ghostButton, open).Label(label).Tooltip(label).Size(28, 28).Padding(0).Shrink(0)
 }
 
 func (a *app) openShare(q domain.Question, order []int) {

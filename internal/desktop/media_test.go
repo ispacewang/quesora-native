@@ -21,17 +21,17 @@ func TestShareCardContainsOnlyPromptAndDisplayedOptions(t *testing.T) {
 	if card.options[0] != q.Options[2] {
 		t.Fatal("option order changed")
 	}
-	tt := ui.NewTester(card.view, 560, 1000)
+	tt := ui.NewTester(card.view, 640, 1000)
 	content := strings.Join(tt.Texts(), "\n")
 	logo, ok := tt.Find("Quesora Logo")
-	if !ok || logo.Y > 60 {
+	if !ok || logo.Y > 76 {
 		t.Fatal("brand not visible at top", logo)
 	}
 	if !strings.Contains(content, "Quesora") || !strings.Contains(content, q.Prompt) || strings.Contains(content, q.Explanation) || strings.Contains(content, q.Bank) || strings.Contains(content, "下载图片") {
 		t.Fatal(content)
 	}
 	pngImage, err := renderShare(card)
-	if err != nil || pngImage.Bounds().Dx() != 1120 || pngImage.Bounds().Dy() < 400 {
+	if err != nil || pngImage.Bounds().Dx() != 1280 || pngImage.Bounds().Dy() < 400 {
 		t.Fatal(pngImage.Bounds(), err)
 	}
 	dir := t.TempDir()
@@ -49,7 +49,7 @@ func TestShareCardContainsOnlyPromptAndDisplayedOptions(t *testing.T) {
 	}
 	defer f.Close()
 	cfg, err := png.DecodeConfig(f)
-	if err != nil || cfg.Width != 1120 || cfg.Height != pngImage.Bounds().Dy() {
+	if err != nil || cfg.Width != 1280 || cfg.Height != pngImage.Bounds().Dy() {
 		t.Fatal(cfg, err)
 	}
 }
@@ -61,6 +61,11 @@ func TestMediaDiagramAndShareActionsAreReachable(t *testing.T) {
 	a.dispatch = func(update func()) { updates <- update }
 	a.share.defaultDirectory = t.TempDir()
 	tt := ui.NewTester(a.view, 1100, 720)
+	share, shareOK := tt.Find("分享题目")
+	progress, progressOK := tt.Find("当前题目进度")
+	if !shareOK || !progressOK || share.X < progress.X+progress.W || share.Y > progress.Y+progress.H || share.W != 28 || share.H != 28 {
+		t.Fatalf("expected a 28×28 share button beside the question progress, got share %v and progress %v", share, progress)
+	}
 	if _, ok := tt.Find("题目配图"); !ok {
 		t.Fatal("question diagram missing")
 	}
@@ -69,7 +74,7 @@ func TestMediaDiagramAndShareActionsAreReachable(t *testing.T) {
 	if _, ok := tt.Find("左移配图"); !ok {
 		t.Fatal("pan controls missing when zoomed")
 	}
-	tt.Scroll(570, 480, 0, 1000)
+	tt.Scroll(570, 480, 0, -1000)
 	click(t, tt, "分享题目")
 	select {
 	case fn := <-updates:
