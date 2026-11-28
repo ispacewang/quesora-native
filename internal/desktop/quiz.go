@@ -83,7 +83,6 @@ func (a *app) quiz(c *ui.Context) {
 					}
 					ui.Row(c.Key("question-actions")).FillWidth().Padding(16, 0, 0, 0).BorderWidth(1, 0, 0, 0).BorderColor(c.Theme().Border.Alpha(.4)).Gap(10).Children(func() {
 						control(c, "prev", "上一题", leftIcon, outlineButton, func() { a.navigate(a.index - 1) }).Label("上一题").Height(32).Disabled(a.index == 0)
-						control(c, "share-question", "分享题目", nil, outlineButton, func() { a.openShare(q, a.displayOptions(q)) }).Height(32)
 						if done {
 							control(c, "next", "下一题 →", nil, primaryButton, a.nextQuestion).Label("下一题").Height(32)
 						} else {
@@ -156,6 +155,7 @@ func (a *app) questionToolbar(c *ui.Context, q domain.Question) {
 			}
 			ui.Spacer(c)
 			ui.Text(c, fmt.Sprintf("%d / %d", a.index+1, len(a.visible()))).Label("当前题目进度").FontSize(12).TextColor(t.TextMuted)
+			shareQuestionButton(c, "share-question", func() { a.openShare(q, a.displayOptions(q)) })
 		})
 		ui.Row(c.Key("filters")).Label("题型筛选").FillWidth().Gap(4).Wrap().AlignItems(ui.Center).Children(func() {
 			ui.Text(c, "题型").FontSize(11).TextColor(t.TextMuted).Margin(0, 4, 0, 0)

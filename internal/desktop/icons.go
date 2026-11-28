@@ -23,6 +23,7 @@ var (
 	chartIcon    = svgIcon(`<path d="M3 3v18h18m-2-12-5 5-4-4-3 3"/>`)
 	pulseIcon    = svgIcon(`<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>`)
 	uploadIcon   = svgIcon(`<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>`)
+	shareIcon    = svgIcon(`<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4m-6.8 7 6.8 4"/>`)
 	shuffleIcon  = svgIcon(`<path d="m18 14 4 4-4 4m0-20 4 4-4 4M2 18h2c5 0 9-12 14-12h4M2 6h2c2 0 4 2 6 6m4 4c2 2 3 2 8 2"/>`)
 	zapIcon      = svgIcon(`<path d="m13 2-10 12h8l-1 8 11-12h-8z"/>`)
 	leftIcon     = svgIcon(`<path d="m15 18-6-6 6-6"/>`)

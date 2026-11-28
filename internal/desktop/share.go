@@ -102,6 +102,11 @@ func renderShare(card shareCard) (*image.RGBA, error) {
 	return ui.Render(card.view, width, int(math.Ceil(float64(box.H))), 2), nil
 }
 
+func shareQuestionButton(c *ui.Context, key string, open func()) {
+	const label = "分享题目"
+	control(c, key, "", shareIcon, ghostButton, open).Label(label).Tooltip(label).Size(28, 28).Padding(0).Shrink(0)
+}
+
 func (a *app) openShare(q domain.Question, order []int) {
 	if a.share.open || a.share.saving {
 		return

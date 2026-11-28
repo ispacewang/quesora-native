@@ -61,6 +61,11 @@ func TestMediaDiagramAndShareActionsAreReachable(t *testing.T) {
 	a.dispatch = func(update func()) { updates <- update }
 	a.share.defaultDirectory = t.TempDir()
 	tt := ui.NewTester(a.view, 1100, 720)
+	share, shareOK := tt.Find("分享题目")
+	progress, progressOK := tt.Find("当前题目进度")
+	if !shareOK || !progressOK || share.X < progress.X+progress.W || share.Y > progress.Y+progress.H || share.W != 28 || share.H != 28 {
+		t.Fatalf("expected a 28×28 share button beside the question progress, got share %v and progress %v", share, progress)
+	}
 	if _, ok := tt.Find("题目配图"); !ok {
 		t.Fatal("question diagram missing")
 	}
@@ -69,7 +74,7 @@ func TestMediaDiagramAndShareActionsAreReachable(t *testing.T) {
 	if _, ok := tt.Find("左移配图"); !ok {
 		t.Fatal("pan controls missing when zoomed")
 	}
-	tt.Scroll(570, 480, 0, 1000)
+	tt.Scroll(570, 480, 0, -1000)
 	click(t, tt, "分享题目")
 	select {
 	case fn := <-updates:
