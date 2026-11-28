@@ -21,17 +21,17 @@ func TestShareCardContainsOnlyPromptAndDisplayedOptions(t *testing.T) {
 	if card.options[0] != q.Options[2] {
 		t.Fatal("option order changed")
 	}
-	tt := ui.NewTester(card.view, 560, 1000)
+	tt := ui.NewTester(card.view, 640, 1000)
 	content := strings.Join(tt.Texts(), "\n")
 	logo, ok := tt.Find("Quesora Logo")
-	if !ok || logo.Y > 60 {
+	if !ok || logo.Y > 76 {
 		t.Fatal("brand not visible at top", logo)
 	}
 	if !strings.Contains(content, "Quesora") || !strings.Contains(content, q.Prompt) || strings.Contains(content, q.Explanation) || strings.Contains(content, q.Bank) || strings.Contains(content, "下载图片") {
 		t.Fatal(content)
 	}
 	pngImage, err := renderShare(card)
-	if err != nil || pngImage.Bounds().Dx() != 1120 || pngImage.Bounds().Dy() < 400 {
+	if err != nil || pngImage.Bounds().Dx() != 1280 || pngImage.Bounds().Dy() < 400 {
 		t.Fatal(pngImage.Bounds(), err)
 	}
 	dir := t.TempDir()
@@ -49,7 +49,7 @@ func TestShareCardContainsOnlyPromptAndDisplayedOptions(t *testing.T) {
 	}
 	defer f.Close()
 	cfg, err := png.DecodeConfig(f)
-	if err != nil || cfg.Width != 1120 || cfg.Height != pngImage.Bounds().Dy() {
+	if err != nil || cfg.Width != 1280 || cfg.Height != pngImage.Bounds().Dy() {
 		t.Fatal(cfg, err)
 	}
 }

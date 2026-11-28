@@ -132,7 +132,8 @@ func isolatedMath(s string) bool {
 		return false
 	}
 	for _, r := range s {
-		if unicode.Is(unicode.Han, r) {
+		// CJK punctuation belongs to prose. Treating the whole line as TeX can drop it.
+		if unicode.Is(unicode.Han, r) || r >= 0x3000 && r <= 0x303f || r >= 0xff01 && r <= 0xff60 {
 			return false
 		}
 	}

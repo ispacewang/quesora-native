@@ -37,3 +37,9 @@ func TestSplitSupportsBareMathAndAlternativeDelimiters(t *testing.T) {
 		}
 	}
 }
+
+func TestMixedUnicodeFormulaKeepsFullWidthPunctuation(t *testing.T) {
+	if parts := Split("x₁≤√2，x₂=π"); len(parts) != 0 {
+		t.Fatalf("CJK punctuation should stay in ordinary text: %#v", parts)
+	}
+}
